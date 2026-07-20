@@ -16,6 +16,14 @@
     --hp-yellow:#f8d870;
     --hp-red:#e85858;
     --mp-blue:#68a8f8;
+    --sky-1:#6ec6f5;
+    --sky-2:#bfe6ff;
+    --sky-3:#eaf7ff;
+    --ground-1:#3f7a2c;
+    --ground-2:#336422;
+    --ground-3:#274d1a;
+    --ground-tex-a:#2f5e21;
+    --ground-tex-b:#376a27;
   }
   *{box-sizing:border-box;}
   html,body{
@@ -27,46 +35,60 @@
   }
   #game{
     width:100%;
-    aspect-ratio:16/10;
+    aspect-ratio:4/3.4;
     max-width:960px;
     max-height:100vh;
+    max-height:100dvh;
     margin:0 auto;
-    background:var(--bg-deep);
+    background:
+      linear-gradient(to bottom,
+        var(--sky-1) 0%,
+        var(--sky-2) 10%,
+        var(--sky-3) 11%,
+        var(--ground-1) 11%,
+        var(--ground-2) 50%,
+        var(--ground-3) 100%);
     position:relative;
     display:flex;
     flex-direction:column;
     border:4px solid #000;
     box-shadow:0 0 0 3px #3a3a5a, 0 0 40px rgba(0,0,0,.8);
-    font-size:14px;
+    font-size:17px;
     user-select:none;
+    overflow:hidden;
+  }
+  #game.terrain-desert{
+    --ground-1:#e0c07f;
+    --ground-2:#c9a058;
+    --ground-3:#a67c3d;
+    --ground-tex-a:#d4af6a;
+    --ground-tex-b:#e0bd7a;
+  }
+  #game::before{ /* ground texture, continues behind all UI */
+    content:"";
+    position:absolute;
+    left:0;right:0;
+    top:11%;bottom:0;
+    background:repeating-linear-gradient(90deg,var(--ground-tex-a),var(--ground-tex-a) 18px,var(--ground-tex-b) 18px,var(--ground-tex-b) 36px);
+    opacity:.45;
+    box-shadow:inset 0 4px 0 rgba(255,255,255,.1);
+    pointer-events:none;
+    z-index:0;
   }
   @media (max-width:700px){
-    #game{font-size:10px;}
+    #game{font-size:13px; aspect-ratio:3/5; max-height:100dvh;}
+  }
+  @media (max-width:480px){
+    #game{aspect-ratio:9/17;}
   }
 
   /* ---------- battlefield ---------- */
   #battlefield{
     flex:1;
     position:relative;
-    background:
-      linear-gradient(to bottom,
-        #6ec6f5 0%,
-        #bfe6ff 14%,
-        #eaf7ff 15%,
-        #3f7a2c 15%,
-        #336422 55%,
-        #274d1a 100%);
+    background:transparent;
     overflow:hidden;
-    border-bottom:3px solid var(--gold);
-  }
-  #battlefield::before{ /* grass texture */
-    content:"";
-    position:absolute;
-    left:0;right:0;
-    top:15%;bottom:0;
-    background:repeating-linear-gradient(90deg,#2f5e21,#2f5e21 18px,#376a27 18px,#376a27 36px);
-    opacity:.45;
-    box-shadow:inset 0 4px 0 rgba(255,255,255,.1);
+    z-index:1;
   }
   #stars{display:none;}
   .star{position:absolute;width:2px;height:2px;background:#fff;opacity:.6;animation:twinkle 2.4s infinite ease-in-out;}
@@ -141,6 +163,37 @@
   @keyframes flashHit{0%,100%{filter:none;}30%{filter:brightness(3) saturate(0) drop-shadow(0 0 8px #fff);}60%{filter:brightness(0.2) sepia(1) saturate(6) hue-rotate(-40deg);}}
   @keyframes shakeSmall{0%,100%{transform:translateX(0);}20%{transform:translateX(-4px);}40%{transform:translateX(4px);}60%{transform:translateX(-3px);}80%{transform:translateX(3px);}}
   @keyframes castGlow{0%,100%{filter:none;}50%{filter:brightness(1.8) drop-shadow(0 0 10px #b0e0ff);}}
+  .turn-arrow{
+    position:absolute;
+    top:-1.05em;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:1.4em;
+    color:#fff;
+    text-shadow:1px 1px 0 #000, -1px -1px 0 #000;
+    opacity:0;
+    pointer-events:none;
+    z-index:5;
+  }
+  .turn-arrow.show{
+    animation:arrowBlink 1.4s ease-in-out infinite;
+  }
+  @keyframes arrowBlink{0%,100%{opacity:1;}50%{opacity:.1;}}
+  .target-hover-arrow{
+    position:absolute;
+    top:-1.05em;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:1.4em;
+    color:#fff;
+    text-shadow:1px 1px 0 #000, -1px -1px 0 #000;
+    opacity:0;
+    pointer-events:none;
+    z-index:6;
+    transition:opacity .1s ease;
+  }
+  .unit.selected-target .target-hover-arrow{opacity:1;}
+  .unit.targetable:hover .target-hover-arrow{opacity:1;}
   @keyframes fadeOutUnit{to{opacity:0;transform:translateY(10px) scale(.85) rotate(8deg);}}
 
   .unit.idle .sprite{}
@@ -152,6 +205,15 @@
   .unit.fading{animation:fadeOutUnit .6s forwards;}
 
   .sprite{position:relative;}
+  .sprite-sheet{
+    width:5.175em;
+    height:5.175em;
+    background-image:var(--party-sheet-url);
+    background-size:400% 400%;
+    background-repeat:no-repeat;
+    image-rendering:auto;
+    filter:drop-shadow(1px 2px 1px rgba(0,0,0,.4));
+  }
 
   /* pixel sprites built from stacked divs (box-shadow pixel grid) */
   .px{
@@ -166,7 +228,7 @@
     left:50%;top:-6px;
     transform:translateX(-50%);
     font-family:'Press Start 2P',monospace;
-    font-size:13px;
+    font-size:26px;
     color:#fff;
     text-shadow:2px 2px 0 #000, -1px -1px 0 #000;
     pointer-events:none;
@@ -190,17 +252,14 @@
 
   /* ---------- bottom UI ---------- */
   #ui-bottom{
-    height:36%;
+    height:27%;
     display:flex;
     flex-direction:column;
-    background:var(--bg-deep);
+    background:transparent;
     padding:6px;
     gap:6px;
-  }
-  #top-row{
-    flex:0 0 34%;
-    display:flex;
-    min-width:0;
+    position:relative;
+    z-index:1;
   }
   .window{
     background:linear-gradient(#0b1470,#050a3c);
@@ -211,12 +270,17 @@
     padding:8px 10px;
   }
   #message-window{
-    flex:1;
+    position:absolute;
+    left:6px;
+    right:6px;
+    bottom:3%;
+    height:8.5%;
     font-size:1.05em;
-    line-height:1.55;
+    line-height:1.3;
     display:flex;
     align-items:center;
     letter-spacing:.02em;
+    z-index:15;
   }
   #message-window span.blinker{
     display:inline-block;
@@ -236,7 +300,7 @@
     display:flex;
     flex-direction:column;
     gap:2px;
-    font-size:.95em;
+    font-size:1.05em;
     overflow-y:auto;
   }
   #command-window .cmd-title{
@@ -254,45 +318,41 @@
     width:10px;color:#fff;opacity:0;
   }
   .cmd-item.active .cursor{opacity:1;animation:blink .6s steps(1) infinite;}
-  .cmd-item.active{background:rgba(248,216,112,.12);}
   .cmd-item.disabled{opacity:.35;cursor:default;}
 
   #status-window{
     flex:1;
     display:grid;
     grid-template-columns:1fr;
-    gap:4px;
-    font-size:.85em;
+    gap:1px;
+    font-size:1.05em;
     overflow-y:auto;
   }
   .status-row{
     display:grid;
-    grid-template-columns:96px 1fr 1fr;
+    grid-template-columns:132px 1fr 1fr;
     align-items:center;
     gap:4px;
-    padding:2px 4px;
+    padding:1.5px 4px;
     border-radius:2px;
   }
-  .status-row.acting{background:rgba(248,216,112,.16);}
   .status-row .nm{
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     display:flex;align-items:center;gap:4px;
   }
-  .status-row .nm .turnmark{color:#fff;width:8px;flex:0 0 auto;display:inline-block;}
   .status-row.ko .nm{color:#8888a8;text-decoration:line-through;}
   .bar-wrap{display:flex;align-items:center;justify-content:flex-end;gap:5px;}
-  .bar-label{width:16px;font-size:.85em;color:#b8c0ff;}
   .bar-track{width:68px;flex:0 0 auto;height:9px;background:#000;border:1px solid #050a3c;box-shadow:0 0 0 1px #5060c0;}
   .bar-track > div{height:100%;}
   .hp-fill{background:linear-gradient(#7cf07c,var(--hp-green));}
   .hp-fill.mid{background:linear-gradient(#f8e888,var(--hp-yellow));}
   .hp-fill.low{background:linear-gradient(#f89898,var(--hp-red));}
   .mp-fill{background:linear-gradient(#a8d0ff,var(--mp-blue));}
-  .num{font-size:.78em;color:#dfe4ff;min-width:40px;text-align:left;}
+  .num{font-family:'Press Start 2P',monospace;font-size:.9em;color:#dfe4ff;text-align:left;white-space:pre;}
 
   #target-window{
     flex:0 0 34%;
-    display:flex;flex-direction:column;gap:2px;font-size:.95em;overflow-y:auto;
+    display:flex;flex-direction:column;gap:2px;font-size:1.05em;overflow-y:auto;
   }
 
   .hidden{display:none !important;}
@@ -329,6 +389,9 @@
     <div id="stars"></div>
     <div id="enemy-row"></div>
     <div id="party-row"></div>
+    <div id="message-window" class="window hidden">
+      <div id="message-text">たたかいがはじまった!</div>
+    </div>
     <div id="flash-overlay"></div>
     <div id="end-overlay" class="hidden">
       <h2 id="end-title"></h2>
@@ -338,11 +401,6 @@
   </div>
 
   <div id="ui-bottom">
-    <div id="top-row">
-      <div id="message-window" class="window">
-        <div id="message-text">たたかいがはじまった!</div>
-      </div>
-    </div>
     <div id="lower-panels">
       <div id="command-window" class="window">
         <div id="cmd-list"></div>
@@ -460,7 +518,31 @@ const SPRITES = {
   ]
 };
 
+const PARTY_SHEET = 'data:image/png;base64,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';
+const PARTY_SHEET_COLS = 4;
+const PARTY_SHEET_ROWS = 4;
+const PARTY_SHEET_MAP = {
+  fighter:{col:0,row:0},
+  mage:{col:1,row:0},
+  priest:{col:2,row:0},
+  monk:{col:3,row:0},
+  knight:{col:0,row:1},
+  blackmage:{col:1,row:1},
+  whitemage:{col:2,row:1},
+  supermonk:{col:3,row:1}
+};
+document.documentElement.style.setProperty('--party-sheet-url', `url(${PARTY_SHEET})`);
+
 function buildSpriteEl(kind, pxSize){
+  if(PARTY_SHEET_MAP[kind]){
+    const {col,row} = PARTY_SHEET_MAP[kind];
+    const wrap = document.createElement('div');
+    wrap.className = 'sprite sprite-sheet';
+    const posX = PARTY_SHEET_COLS>1 ? (col/(PARTY_SHEET_COLS-1))*100 : 0;
+    const posY = PARTY_SHEET_ROWS>1 ? (row/(PARTY_SHEET_ROWS-1))*100 : 0;
+    wrap.style.backgroundPosition = posX + '% ' + posY + '%';
+    return wrap;
+  }
   const pattern = SPRITES[kind];
   const palette = PALETTES[kind];
   const rows = pattern.length;
@@ -488,12 +570,19 @@ function buildSpriteEl(kind, pxSize){
 }
 
 /* ================= game data ================= */
-function makeChar(id,name,kind,hp,mp,atk,def,spd,spells){
-  return {id,name,kind,hp,maxHp:hp,mp,maxMp:mp,atk,def,spd,spells:spells||[],alive:true,isEnemy:false};
+function makeChar(id,name,kind,hp,mp,atk,def,spd,spells,techniques){
+  return {id,name,kind,hp,maxHp:hp,mp,maxMp:mp,atk,def,spd,spells:spells||[],techniques:techniques||[],evolved:false,alive:true,isEnemy:false};
 }
 function makeEnemy(id,name,kind,hp,atk,def,spd,gold,exp){
   return {id,name,kind,hp,maxHp:hp,atk,def,spd,gold,exp,alive:true,isEnemy:true};
 }
+
+const EVOLUTION = {
+  fighter:{kind:'knight', name:'ナイト'},
+  mage:{kind:'blackmage', name:'くろまどうし'},
+  priest:{kind:'whitemage', name:'しろまどうし'},
+  monk:{kind:'supermonk', name:'スーパーモンク'}
+};
 
 const PARTY_TEMPLATE = ()=>[
   makeChar('p0','せんし','fighter',48,0,13,5,9,[]),
@@ -505,8 +594,58 @@ const PARTY_TEMPLATE = ()=>[
     {name:'ケアル',mp:3,power:22,type:'heal-single'},
     {name:'プロテス',mp:5,power:0,type:'buff-def'}
   ]),
-  makeChar('p3','とうぞく','thief',34,0,9,3,14,[])
+  makeChar('p3','モンク','monk',34,0,10,3,14,[],[
+    {name:'せいけんづき',mp:0,mult:1.3,type:'tech-atk-single'}
+  ])
 ];
+
+function applyJobSkills(p){
+  switch(p.kind){
+    case 'knight':
+      p.maxMp = Math.max(p.maxMp, 8); p.mp = p.maxMp;
+      p.techniques = (p.techniques||[]).concat([
+        {name:'りょうてぎり',mp:2,mult:1.5,type:'tech-atk-single'}
+      ]);
+      break;
+    case 'blackmage':
+      p.maxMp += 6; p.mp = p.maxMp;
+      p.spells = (p.spells||[]).concat([
+        {name:'メテオ',mp:6,power:38,type:'atk-all'}
+      ]);
+      break;
+    case 'whitemage':
+      p.maxMp += 6; p.mp = p.maxMp;
+      p.spells = (p.spells||[]).concat([
+        {name:'ケアルガ',mp:12,power:22,type:'heal-all'}
+      ]);
+      break;
+    case 'supermonk':
+      p.maxMp = Math.max(p.maxMp, 8); p.mp = p.maxMp;
+      p.techniques = (p.techniques||[]).concat([
+        {name:'しんくうは',mp:4,mult:1.2,type:'tech-atk-all'}
+      ]);
+      break;
+  }
+}
+
+function classChangeParty(){
+  const changed = [];
+  state.party.forEach(p=>{
+    const eve = EVOLUTION[p.kind];
+    if(!eve || p.evolved) return;
+    const oldName = p.name;
+    p.kind = eve.kind;
+    p.name = eve.name;
+    p.evolved = true;
+    applyJobSkills(p);
+    changed.push(`${oldName}が${eve.name}に`);
+  });
+  if(changed.length){
+    renderUnits();
+    renderStatus();
+  }
+  return changed;
+}
 
 const ENEMY_POOL = [
   ()=>makeEnemy('slime1','スライム','slime',14,4,1,4,3,2),
@@ -537,13 +676,16 @@ let state = {
   actingLocked: false,
   queuedActions: [],  // actions for this round
   battleOver: false,
-  phase: 'command'    // command | target | resolving
+  phase: 'command',    // command | target | resolving
+  targetSelectMode: false,
+  activeTargetConfirm: null
 };
 
 const el = {
   enemyRow: document.getElementById('enemy-row'),
   partyRow: document.getElementById('party-row'),
   msg: document.getElementById('message-text'),
+  messageWindow: document.getElementById('message-window'),
   cmdList: document.getElementById('cmd-list'),
   targetWindow: document.getElementById('target-window'),
   targetList: document.getElementById('target-list'),
@@ -556,7 +698,8 @@ const el = {
 };
 
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
-function setMessage(t){ el.msg.textContent = t; }
+function setMessage(t){ el.msg.textContent = t; el.messageWindow.classList.remove('hidden'); }
+function hideMessageWindow(){ el.messageWindow.classList.add('hidden'); }
 
 /* ---------- stars background ---------- */
 function spawnStars(){
@@ -580,6 +723,10 @@ function renderUnits(){
     u.className = 'unit idle' + (en.alive?'':' dead');
     u.id = 'unit-'+en.id;
     u.dataset.id = en.id;
+    const hoverArrow = document.createElement('div');
+    hoverArrow.className = 'target-hover-arrow';
+    hoverArrow.textContent = '▼';
+    u.appendChild(hoverArrow);
     const spriteScale = en.kind==='ogre' ? 6 : (en.kind==='slime'?6:5);
     const sprite = buildSpriteEl(en.kind, spriteScale);
     u.appendChild(sprite);
@@ -606,6 +753,15 @@ function renderUnits(){
     u.className = 'unit idle' + (p.alive?'':' dead');
     u.id = 'unit-'+p.id;
     u.dataset.id = p.id;
+    const arrow = document.createElement('div');
+    arrow.className = 'turn-arrow';
+    arrow.id = 'arrow-'+p.id;
+    arrow.textContent = '▼';
+    u.appendChild(arrow);
+    const hoverArrow = document.createElement('div');
+    hoverArrow.className = 'target-hover-arrow';
+    hoverArrow.textContent = '▼';
+    u.appendChild(hoverArrow);
     const sprite = buildSpriteEl(p.kind, 5);
     u.appendChild(sprite);
     const shadow = document.createElement('div');
@@ -615,27 +771,44 @@ function renderUnits(){
   });
 }
 
+function updateTurnIndicator(){
+  state.party.forEach((p,i)=>{
+    const arrow = document.getElementById('arrow-'+p.id);
+    if(!arrow) return;
+    const active = (state.phase==='command' && i===state.turnIndex && p.alive);
+    arrow.classList.toggle('show', active);
+  });
+}
+
+function pad3(n){
+  const s = String(n);
+  return s.length>=3 ? s : s + '\u00A0'.repeat(3-s.length);
+}
+
 function renderStatus(){
   el.statusWindow.innerHTML='';
-  state.party.forEach((p,i)=>{
+  const list = state.targetSelectMode
+    ? state.party.map((p,i)=>({p,i})).filter(({i})=>i===state.turnIndex)
+    : state.party.map((p,i)=>({p,i}));
+  list.forEach(({p,i})=>{
+    const isActing = (state.phase!=='resolving' && i===state.turnIndex && p.alive);
     const row = document.createElement('div');
-    row.className='status-row'+(!p.alive?' ko':'')+((state.phase!=='resolving' && i===state.turnIndex && p.alive)?' acting':'');
+    row.className='status-row'+(!p.alive?' ko':'')+((isActing && !state.targetSelectMode)?' acting':'');
     const hpPct = p.hp/p.maxHp;
     const hpClass = hpPct<0.3?'low':(hpPct<0.6?'mid':'');
     row.innerHTML = `
-      <div class="nm"><span class="turnmark">${(state.phase!=='resolving' && i===state.turnIndex && p.alive)?'▶':''}</span>&nbsp;${p.name}</div>
+      <div class="nm">${p.name}</div>
       <div class="bar-wrap">
-        <span class="bar-label">HP</span>
-        <span class="num">${p.hp}/${p.maxHp}</span>
+        <span class="num">HP ${pad3(p.hp)}/${pad3(p.maxHp)}</span>
         <div class="bar-track"><div class="hp-fill ${hpClass}" style="width:${Math.max(0,hpPct*100)}%"></div></div>
       </div>
       <div class="bar-wrap">
-        <span class="bar-label">MP</span>
-        <span class="num">${p.mp}/${p.maxMp}</span>
+        <span class="num">MP ${pad3(p.mp)}/${pad3(p.maxMp)}</span>
         <div class="bar-track"><div class="mp-fill" style="width:${p.maxMp?Math.max(0,p.mp/p.maxMp*100):0}%"></div></div>
       </div>`;
     el.statusWindow.appendChild(row);
   });
+  updateTurnIndicator();
 }
 
 /* ---------- effects ---------- */
@@ -699,9 +872,11 @@ async function animateDeath(unitId){
 /* ================= command UI ================= */
 const COMMANDS = [
   {key:'fight', label:'たたかう'},
+  {key:'skill', label:'とくぎ'},
   {key:'magic', label:'まほう'},
   {key:'defend', label:'ぼうぎょ'},
-  {key:'run', label:'にげる'}
+  {key:'run', label:'にげる'},
+  {key:'back', label:'もどる'}
 ];
 
 function currentActor(){
@@ -711,13 +886,20 @@ function currentActor(){
 function renderCommands(){
   el.targetWindow.classList.add('hidden');
   el.cmdList.innerHTML='';
+  state.activeTargetConfirm = null;
+  if(state.targetSelectMode){
+    state.targetSelectMode = false;
+    renderStatus();
+  }
   const actor = currentActor();
   if(!actor || !actor.alive){ return; }
   COMMANDS.forEach(cmd=>{
-    const disabled = cmd.key==='magic' && actor.spells.length===0;
+    const disabled = (cmd.key==='magic' && actor.spells.length===0)
+      || (cmd.key==='skill' && actor.techniques.length===0)
+      || (cmd.key==='back' && state.turnIndex<=0);
     const div = document.createElement('div');
     div.className = 'cmd-item'+(disabled?' disabled':'');
-    div.innerHTML = `<span class="cursor">▶</span><span>${cmd.label}</span>`;
+    div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${cmd.label}</span>`;
     if(!disabled){
       div.addEventListener('click', ()=>chooseCommand(cmd.key));
       div.addEventListener('mouseenter', ()=>{
@@ -758,6 +940,14 @@ function chooseCommand(key){
     showSpellSelect(actor);
     return;
   }
+  if(key==='skill'){
+    showSkillSelect(actor);
+    return;
+  }
+  if(key==='back'){
+    goBackOneTurn();
+    return;
+  }
 }
 
 function showSpellSelect(actor){
@@ -768,10 +958,14 @@ function showSpellSelect(actor){
     const disabled = actor.mp < sp.mp;
     const div = document.createElement('div');
     div.className='cmd-item'+(disabled?' disabled':'');
-    div.innerHTML = `<span class="cursor">▶</span><span>${sp.name}　(MP${sp.mp})</span>`;
+    div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${sp.name}　(MP${sp.mp})</span>`;
     if(!disabled){
       div.addEventListener('click', ()=>{
-        if(sp.type==='heal-single' || sp.type==='buff-def'){
+        if(sp.type==='atk-all' || sp.type==='heal-all'){
+          el.targetWindow.classList.add('hidden');
+          queueAction({actorId:actor.id, isEnemy:false, type:'spell', spell:sp});
+          advanceTurn();
+        } else if(sp.type==='heal-single' || sp.type==='buff-def'){
           showTargetSelect('party', (targetId)=>{
             queueAction({actorId:actor.id, isEnemy:false, type:'spell', spell:sp, targetId});
             advanceTurn();
@@ -792,7 +986,44 @@ function showSpellSelect(actor){
   });
   const back = document.createElement('div');
   back.className='cmd-item';
-  back.innerHTML = `<span class="cursor">▶</span><span>もどる</span>`;
+  back.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>もどる</span>`;
+  back.addEventListener('click', ()=>{ el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; });
+  el.targetList.appendChild(back);
+}
+
+function showSkillSelect(actor){
+  el.targetWindow.classList.remove('hidden');
+  document.getElementById('target-window').querySelector('.cmd-title').textContent='とくぎをえらぶ';
+  el.targetList.innerHTML='';
+  actor.techniques.forEach(tech=>{
+    const disabled = actor.mp < tech.mp;
+    const div = document.createElement('div');
+    div.className='cmd-item'+(disabled?' disabled':'');
+    const mpTag = tech.mp>0 ? `　(MP${tech.mp})` : '';
+    div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${tech.name}${mpTag}</span>`;
+    if(!disabled){
+      div.addEventListener('click', ()=>{
+        if(tech.type==='tech-atk-all'){
+          el.targetWindow.classList.add('hidden');
+          queueAction({actorId:actor.id, isEnemy:false, type:'tech', tech, targetAll:true});
+          advanceTurn();
+        } else {
+          showTargetSelect('enemy', (targetId)=>{
+            queueAction({actorId:actor.id, isEnemy:false, type:'tech', tech, targetId});
+            advanceTurn();
+          }, 'こうげきするてきをえらんでください');
+        }
+      });
+      div.addEventListener('mouseenter', ()=>{
+        [...el.targetList.children].forEach(c=>c.classList.remove('active'));
+        div.classList.add('active');
+      });
+    }
+    el.targetList.appendChild(div);
+  });
+  const back = document.createElement('div');
+  back.className='cmd-item';
+  back.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>もどる</span>`;
   back.addEventListener('click', ()=>{ el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; });
   el.targetList.appendChild(back);
 }
@@ -802,29 +1033,64 @@ function showTargetSelect(side, onPick, promptText){
   el.targetWindow.classList.remove('hidden');
   document.getElementById('target-window').querySelector('.cmd-title').textContent = promptText;
   el.targetList.innerHTML='';
+  state.targetSelectMode = true;
+  renderStatus();
   const list = side==='enemy' ? state.enemies : state.party;
-  list.filter(u=>u.alive).forEach(u=>{
+  const aliveList = list.filter(u=>u.alive);
+
+  function confirmPick(id){
+    clearTargetHighlights();
+    el.targetWindow.classList.add('hidden');
+    state.targetSelectMode = false;
+    state.activeTargetConfirm = null;
+    onPick(id);
+  }
+  state.activeTargetConfirm = confirmPick;
+
+  aliveList.forEach(u=>{
     const uEl = document.getElementById('unit-'+u.id);
     if(uEl) uEl.classList.add('targetable');
     const div = document.createElement('div');
     div.className='cmd-item';
+    div.dataset.targetId = u.id;
     const hpInfo = u.isEnemy ? '' : `　HP ${u.hp}/${u.maxHp}`;
-    div.innerHTML = `<span class="cursor">▶</span><span>${u.name}${hpInfo}</span>`;
+    div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${u.name}${hpInfo}</span>`;
     div.addEventListener('mouseenter', ()=>{
-      [...el.targetList.children].forEach(c=>c.classList.remove('active'));
-      div.classList.add('active');
-      clearTargetHighlights();
-      document.querySelectorAll('.unit').forEach(x=>{ if(list.some(l=>l.alive && 'unit-'+l.id===x.id)) x.classList.add('targetable'); });
-      if(uEl) uEl.classList.add('selected-target');
+      highlightTarget(u.id, aliveList);
     });
-    div.addEventListener('click', ()=>{
-      clearTargetHighlights();
-      el.targetWindow.classList.add('hidden');
-      onPick(u.id);
-    });
+    div.addEventListener('click', ()=> confirmPick(u.id));
     el.targetList.appendChild(div);
   });
   if(el.targetList.children.length){ el.targetList.children[0].classList.add('active'); }
+}
+
+function highlightTarget(id, aliveList){
+  [...el.targetList.children].forEach(c=>c.classList.toggle('active', c.dataset.targetId===id));
+  clearTargetHighlights();
+  aliveList.forEach(l=>{ const x=document.getElementById('unit-'+l.id); if(x) x.classList.add('targetable'); });
+  const uEl = document.getElementById('unit-'+id);
+  if(uEl) uEl.classList.add('selected-target');
+}
+
+function setupBattlefieldTargetDelegation(){
+  const bf = document.getElementById('battlefield');
+  bf.addEventListener('mouseover', (e)=>{
+    if(!state.targetSelectMode) return;
+    const unitEl = e.target.closest('.unit.targetable');
+    if(!unitEl) return;
+    if(unitEl.classList.contains('selected-target')) return;
+    document.querySelectorAll('.unit.targetable').forEach(u=>u.classList.remove('selected-target'));
+    unitEl.classList.add('selected-target');
+    document.querySelectorAll('#target-list .cmd-item').forEach(c=>{
+      c.classList.toggle('active', c.dataset.targetId===unitEl.dataset.id);
+    });
+  });
+  bf.addEventListener('click', (e)=>{
+    if(!state.targetSelectMode || !state.activeTargetConfirm) return;
+    const unitEl = e.target.closest('.unit.targetable');
+    if(!unitEl) return;
+    state.activeTargetConfirm(unitEl.dataset.id);
+  });
 }
 
 function queueAction(action){
@@ -841,8 +1107,24 @@ function advanceTurn(){
   if(state.turnIndex >= state.party.length){
     startResolvePhase();
   } else {
+    hideMessageWindow();
+    regenMp(currentActor());
+    renderStatus();
     renderCommands();
   }
+}
+
+function goBackOneTurn(){
+  if(state.turnIndex<=0) return;
+  state.turnIndex--;
+  while(state.turnIndex>0 && !state.party[state.turnIndex].alive){
+    state.turnIndex--;
+  }
+  state.queuedActions.pop();
+  clearTargetHighlights();
+  renderStatus();
+  hideMessageWindow();
+  renderCommands();
 }
 
 function tryRun(){
@@ -924,6 +1206,8 @@ async function executeAction(action, allUnits){
       setMessage(`${target.name}を たおした!`);
       await animateDeath(target.id);
       await sleep(300);
+    } else {
+      await applyPassiveOnHit(target, dmg, actor);
     }
     return;
   }
@@ -961,6 +1245,32 @@ async function executeAction(action, allUnits){
       renderStatus();
       setMessage(`${target.name}の HPが ${heal} かいふくした!`);
       await sleep(500);
+    } else if(sp.type==='heal-all'){
+      const targets = state.party.filter(p=>p.alive);
+      for(const target of targets){
+        const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
+        target.hp = Math.min(target.maxHp, target.hp+heal);
+        popDamage(target.id, '+'+heal, 'heal');
+        await sleep(150);
+      }
+      renderStatus();
+      setMessage(`${actor.name}の ${sp.name}で なかまぜんいんが かいふくした!`);
+      await sleep(450);
+    } else if(sp.type==='atk-all'){
+      const targets = state.enemies.filter(e=>e.alive);
+      for(const target of targets){
+        let dmg = Math.max(1, Math.round(sp.power*(0.85+Math.random()*0.3)));
+        target.hp = Math.max(0, target.hp - dmg);
+        popDamage(target.id, dmg, null);
+        updateHpBarsOnly();
+        if(target.hp<=0){
+          target.alive=false;
+          await animateDeath(target.id);
+        }
+        await sleep(250);
+      }
+      setMessage(`${actor.name}の ${sp.name}が てき ぜんたいを おそった!`);
+      await sleep(400);
     } else if(sp.type==='buff-def'){
       const target = allUnits[action.targetId];
       if(!target) return;
@@ -971,6 +1281,94 @@ async function executeAction(action, allUnits){
     }
     updateHpBarsOnly();
     return;
+  }
+  if(action.type==='tech'){
+    const tech = action.tech;
+    if(actor.mp < tech.mp){
+      setMessage(`${actor.name}は MPが たりない!`);
+      await sleep(600);
+      return;
+    }
+    actor.mp -= tech.mp;
+    setMessage(`${actor.name}の ${tech.name}!`);
+    if(tech.type==='tech-atk-single'){
+      const target = allUnits[action.targetId];
+      if(!target || !target.alive) return;
+      await animateAttack(actor.id, target.id, !actor.isEnemy);
+      let dmg = Math.max(1, Math.round(actor.atk*tech.mult*(0.85+Math.random()*0.3) - target.def*(target.defending?1.6:1)));
+      target.hp = Math.max(0, target.hp - dmg);
+      popDamage(target.id, dmg, null);
+      updateHpBarsOnly();
+      setMessage(`${target.name}に ${dmg}の ダメージ!`);
+      await sleep(450);
+      if(target.hp<=0){
+        target.alive=false;
+        setMessage(`${target.name}を たおした!`);
+        await animateDeath(target.id);
+        await sleep(300);
+      }
+    } else if(tech.type==='tech-atk-all'){
+      const targets = state.enemies.filter(e=>e.alive);
+      for(const target of targets){
+        await animateAttack(actor.id, target.id, !actor.isEnemy);
+        let dmg = Math.max(1, Math.round(actor.atk*tech.mult*(0.85+Math.random()*0.3) - target.def*(target.defending?1.6:1)));
+        target.hp = Math.max(0, target.hp - dmg);
+        popDamage(target.id, dmg, null);
+        updateHpBarsOnly();
+        if(target.hp<=0){
+          target.alive=false;
+          await animateDeath(target.id);
+        }
+        await sleep(250);
+      }
+      setMessage(`${actor.name}の ${tech.name}が てき ぜんたいを おそった!`);
+      await sleep(400);
+    }
+    updateHpBarsOnly();
+    return;
+  }
+}
+
+async function applyPassiveOnHit(target, dmg, attacker){
+  if(target.isEnemy || target.hp<=0) return;
+  if(target.kind==='knight'){
+    const heal = Math.max(1, Math.round(dmg/4));
+    target.hp = Math.min(target.maxHp, target.hp+heal);
+    popDamage(target.id, '+'+heal, 'heal');
+    updateHpBarsOnly();
+    setMessage(`${target.name}は ダメージから ${heal} かいふくした!`);
+    await sleep(450);
+  } else if(target.kind==='supermonk'){
+    if(attacker && attacker.alive && attacker.isEnemy){
+      const counter = Math.max(1, Math.round(dmg/4));
+      attacker.hp = Math.max(0, attacker.hp-counter);
+      setMessage(`${target.name}の カウンター!`);
+      await animateAttack(target.id, attacker.id, !target.isEnemy);
+      popDamage(attacker.id, counter, null);
+      updateHpBarsOnly();
+      setMessage(`${attacker.name}に ${counter}の ダメージ!`);
+      await sleep(400);
+      if(attacker.hp<=0){
+        attacker.alive=false;
+        setMessage(`${attacker.name}を たおした!`);
+        await animateDeath(attacker.id);
+        await sleep(300);
+      }
+      updateHpBarsOnly();
+    }
+  }
+}
+
+function regenMp(p){
+  if(!p || p.maxMp<=0 || p.mp>=p.maxMp) return;
+  const pct = 0.20 + Math.random()*0.10; // 約25%程度(20〜30%のランダム)
+  const amt = Math.round(p.maxMp*pct);
+  if(amt<=0) return;
+  const before = p.mp;
+  p.mp = Math.min(p.maxMp, p.mp+amt);
+  const healed = p.mp-before;
+  if(healed>0){
+    popDamage(p.id, '+'+healed, 'heal');
   }
 }
 
@@ -994,7 +1392,9 @@ function nextRound(){
     // shouldn't happen (means all dead, handled above)
     return;
   }
-  setMessage(currentActor().name);
+  renderStatus();
+  hideMessageWindow();
+  regenMp(currentActor());
   renderStatus();
   renderCommands();
 }
@@ -1012,8 +1412,13 @@ function endBattle(victory, ranAway){
     } else if(victory){
       const gold = state.enemies.reduce((s,e)=>s+e.gold,0);
       const exp = state.enemies.reduce((s,e)=>s+e.exp,0);
+      const changed = classChangeParty();
       el.endTitle.textContent = 'しょうり!';
-      el.endDesc.textContent = `てきを ぜんめつさせた! ${gold}ゴールドと ${exp}けいけんちを てにいれた。`;
+      let desc = `てきを ぜんめつさせた! ${gold}ゴールドと ${exp}けいけんちを てにいれた。`;
+      if(changed.length){
+        desc += ` ${changed.join('、')} クラスチェンジした!`;
+      }
+      el.endDesc.textContent = desc;
       el.endBtn.textContent = 'つぎのたたかいへ';
     } else {
       el.endTitle.textContent = 'ぜんめつ...';
@@ -1040,6 +1445,7 @@ function startBattle(round){
   state.turnIndex = 0;
   state.queuedActions = [];
   state.battleOver = false;
+  document.getElementById('game').classList.toggle('terrain-desert', state.round>=2);
   state.phase='command';
   state.party.forEach(p=>p.defending=false);
   while(state.turnIndex < state.party.length && !state.party[state.turnIndex].alive){
@@ -1051,13 +1457,16 @@ function startBattle(round){
   setMessage(`${names}が あらわれた!`);
   setTimeout(()=>{
     if(state.turnIndex < state.party.length){
-      setMessage(currentActor().name);
+      hideMessageWindow();
+      regenMp(currentActor());
+      renderStatus();
       renderCommands();
     }
   }, 900);
 }
 
 spawnStars();
+setupBattlefieldTargetDelegation();
 startBattle(1);
 
 })();
