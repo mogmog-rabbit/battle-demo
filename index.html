@@ -172,7 +172,21 @@
   @keyframes lungeLeft{0%{transform:translateX(0);}45%{transform:translateX(-60px) scale(1.05);}55%{transform:translateX(-60px) scale(1.05);}100%{transform:translateX(0);}}
   @keyframes flashHit{0%,100%{filter:none;}30%{filter:brightness(3) saturate(0) drop-shadow(0 0 8px #fff);}60%{filter:brightness(0.2) sepia(1) saturate(6) hue-rotate(-40deg);}}
   @keyframes shakeSmall{0%,100%{transform:translateX(0);}20%{transform:translateX(-4px);}40%{transform:translateX(4px);}60%{transform:translateX(-3px);}80%{transform:translateX(3px);}}
-  @keyframes castGlow{0%,100%{filter:none;}50%{filter:brightness(1.8) drop-shadow(0 0 10px #b0e0ff);}}
+  @keyframes castGlow{0%,100%{filter:none;}50%{filter:brightness(1.8) drop-shadow(0 0 10px var(--cast-color, #b0e0ff));}}
+  .impact-burst{
+    position:absolute;
+    left:50%; top:42%;
+    width:10px;height:10px;
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+    z-index:18;
+    animation:burstPop .5s ease forwards;
+  }
+  @keyframes burstPop{
+    0%{ opacity:.95; width:8px; height:8px; box-shadow:0 0 0 0 currentColor;}
+    100%{ opacity:0; width:64px; height:64px; box-shadow:0 0 26px 8px currentColor;}
+  }
   .turn-arrow{
     position:absolute;
     top:-1.05em;
@@ -246,6 +260,7 @@
     z-index:20;
   }
   .dmg-pop.heal{color:#8cffb0;}
+  .dmg-pop.mpheal{color:#68a8f8;}
   .dmg-pop.miss{color:#cfcfe8;}
   @keyframes popUp{
     0%{opacity:0;transform:translate(-50%,6px) scale(.7);}
@@ -617,10 +632,12 @@ const EVOLUTION = {
 };
 
 const PARTY_TEMPLATE = ()=>[
-  makeChar('p0','せんし','fighter',48,0,13,5,9,[]),
+  makeChar('p0','せんし','fighter',48,0,13,5,9,[],[
+    {name:'りょうてぎり',mp:2,mult:1.5,type:'tech-atk-single'}
+  ]),
   makeChar('p1','まほうつかい','mage',26,20,4,2,10,[
-    {name:'ファイア',mp:4,power:16,type:'atk-single'},
-    {name:'ブリザド',mp:6,power:22,type:'atk-single'}
+    {name:'ファイア',mp:4,power:18,type:'atk-single'},
+    {name:'ブリザド',mp:4,power:18,type:'atk-single'}
   ]),
   makeChar('p2','そうりょ','priest',30,18,3,3,8,[
     {name:'ケアル',mp:3,power:22,type:'heal-single'},
@@ -636,7 +653,7 @@ function applyJobSkills(p){
     case 'knight':
       p.maxMp = Math.max(p.maxMp, 8); p.mp = p.maxMp;
       p.techniques = (p.techniques||[]).concat([
-        {name:'りょうてぎり',mp:2,mult:1.5,type:'tech-atk-single'}
+        {name:'じゅうじぎり',mp:4,mult:1.8,type:'tech-atk-single'}
       ]);
       break;
     case 'blackmage':
@@ -719,7 +736,8 @@ let state = {
   battleOver: false,
   phase: 'command',    // command | target | resolving
   targetSelectMode: false,
-  activeTargetConfirm: null
+  activeTargetConfirm: null,
+  endAction: null
 };
 
 const el = {
@@ -896,9 +914,37 @@ async function animateAttack(attackerId, targetId, isPartyAttacker){
   if(a){ a.classList.remove('attack-left','attack-right'); a.classList.add('idle'); }
   if(t){ t.classList.remove('hit','shake'); }
 }
-async function animateCast(casterId){
+const EFFECT_COLORS = {
+  'ファイア':'#ff4433',
+  'ブリザド':'#3388ff',
+  'ケアル':'#44ff88',
+  'ケアルガ':'#44ff88',
+  'プロテス':'#66e0ff',
+  'メテオ':'#111111',
+  'しんくうは':'#ffffff',
+  'せいけんづき':'#ff9933',
+  'りょうてぎり':'#ffe066',
+  'じゅうじぎり':'#ffe066'
+};
+
+function spawnImpactBurst(unitId, color){
+  if(!color) return;
+  const u = document.getElementById('unit-'+unitId);
+  if(!u) return;
+  const b = document.createElement('div');
+  b.className='impact-burst';
+  b.style.color = color;
+  b.style.background = color;
+  u.appendChild(b);
+  setTimeout(()=>b.remove(), 520);
+}
+
+async function animateCast(casterId, color){
   const c = document.getElementById('unit-'+casterId);
-  if(c){ c.classList.remove('idle'); c.classList.add('casting'); }
+  if(c){
+    if(color) c.style.setProperty('--cast-color', color);
+    c.classList.remove('idle'); c.classList.add('casting');
+  }
   await sleep(500);
   screenFlash();
   await sleep(250);
@@ -1144,7 +1190,7 @@ function advanceTurn(){
     startResolvePhase();
   } else {
     hideMessageWindow();
-    regenMp(currentActor());
+    applyTurnStartPassives(currentActor());
     renderStatus();
     renderCommands();
   }
@@ -1282,12 +1328,13 @@ async function executeAction(action, allUnits){
     }
     actor.mp -= sp.mp;
     setMessage(`${actor.name}は ${sp.name}を となえた!`);
-    await animateCast(actor.id);
+    await animateCast(actor.id, EFFECT_COLORS[sp.name]);
     if(sp.type==='atk-single'){
       const target = resolveTarget(action, actor, allUnits);
       if(!target) return;
       let dmg = Math.max(1, Math.round(sp.power*(0.85+Math.random()*0.3)));
       target.hp = Math.max(0, target.hp - dmg);
+      spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
       popDamage(target.id, dmg, null);
       updateHpBarsOnly();
       setMessage(`${target.name}に ${dmg}の ダメージ!`);
@@ -1305,6 +1352,7 @@ async function executeAction(action, allUnits){
       if(!target) return;
       const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
       target.hp = Math.min(target.maxHp, target.hp+heal);
+      spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
       popDamage(target.id, '+'+heal, 'heal');
       renderStatus();
       setMessage(`${target.name}の HPが ${heal} かいふくした!`);
@@ -1314,6 +1362,7 @@ async function executeAction(action, allUnits){
       for(const target of targets){
         const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
         target.hp = Math.min(target.maxHp, target.hp+heal);
+        spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
         popDamage(target.id, '+'+heal, 'heal');
         await sleep(150);
       }
@@ -1325,6 +1374,7 @@ async function executeAction(action, allUnits){
       for(const target of targets){
         let dmg = Math.max(1, Math.round(sp.power*(0.85+Math.random()*0.3)));
         target.hp = Math.max(0, target.hp - dmg);
+        spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
         popDamage(target.id, dmg, null);
         updateHpBarsOnly();
         if(target.hp<=0){
@@ -1340,6 +1390,7 @@ async function executeAction(action, allUnits){
     } else if(sp.type==='heal-self'){
       const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
       actor.hp = Math.min(actor.maxHp, actor.hp+heal);
+      spawnImpactBurst(actor.id, EFFECT_COLORS[sp.name]);
       popDamage(actor.id, '+'+heal, 'heal');
       updateHpBarsOnly();
       setMessage(`${actor.name}は じぶんを かいふくした! ${heal} かいふく!`);
@@ -1347,6 +1398,7 @@ async function executeAction(action, allUnits){
     } else if(sp.type==='buff-def'){
       const target = allUnits[action.targetId];
       if(!target) return;
+      spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
       target.def += 4;
       popDamage(target.id, 'DEF UP', 'heal');
       setMessage(`${target.name}の ぼうぎょりょくが あがった!`);
@@ -1370,6 +1422,7 @@ async function executeAction(action, allUnits){
       await animateAttack(actor.id, target.id, !actor.isEnemy);
       let dmg = Math.max(1, Math.round(actor.atk*tech.mult*(0.85+Math.random()*0.3) - target.def*(target.defending?1.6:1)));
       target.hp = Math.max(0, target.hp - dmg);
+      spawnImpactBurst(target.id, EFFECT_COLORS[tech.name]);
       popDamage(target.id, dmg, null);
       updateHpBarsOnly();
       setMessage(`${target.name}に ${dmg}の ダメージ!`);
@@ -1386,6 +1439,7 @@ async function executeAction(action, allUnits){
         await animateAttack(actor.id, target.id, !actor.isEnemy);
         let dmg = Math.max(1, Math.round(actor.atk*tech.mult*(0.85+Math.random()*0.3) - target.def*(target.defending?1.6:1)));
         target.hp = Math.max(0, target.hp - dmg);
+        spawnImpactBurst(target.id, EFFECT_COLORS[tech.name]);
         popDamage(target.id, dmg, null);
         updateHpBarsOnly();
         if(target.hp<=0){
@@ -1405,6 +1459,7 @@ async function executeAction(action, allUnits){
 async function applyPassiveOnHit(target, dmg, attacker){
   if(target.isEnemy || target.hp<=0) return;
   if(target.kind==='knight'){
+    await sleep(500);
     const heal = Math.max(1, Math.round(dmg/4));
     target.hp = Math.min(target.maxHp, target.hp+heal);
     popDamage(target.id, '+'+heal, 'heal');
@@ -1442,15 +1497,29 @@ function regenMp(p){
   p.mp = Math.min(p.maxMp, p.mp+amt);
   const healed = p.mp-before;
   if(healed>0){
-    popDamage(p.id, '+'+healed, 'heal');
+    popDamage(p.id, '+'+healed, 'mpheal');
+  }
+}
+
+function applyTurnStartPassives(p){
+  if(!p) return;
+  regenMp(p);
+  if(p.kind==='whitemage' && p.alive && p.hp<p.maxHp){
+    setTimeout(()=>{
+      if(!p.alive) return;
+      const heal = 3;
+      p.hp = Math.min(p.maxHp, p.hp+heal);
+      popDamage(p.id, '+'+heal, 'heal');
+      updateHpBarsOnly();
+    }, 500);
   }
 }
 
 function checkBattleEnd(){
   const partyAlive = state.party.some(p=>p.alive);
   const enemiesAlive = state.enemies.some(e=>e.alive);
-  if(!partyAlive){ endBattle(false, false); return true; }
-  if(!enemiesAlive){ endBattle(true, false); return true; }
+  if(!partyAlive){ endBattle(false); return true; }
+  if(!enemiesAlive){ endBattle(true); return true; }
   return false;
 }
 
@@ -1468,22 +1537,29 @@ function nextRound(){
   }
   renderStatus();
   hideMessageWindow();
-  regenMp(currentActor());
+  applyTurnStartPassives(currentActor());
   renderStatus();
   renderCommands();
 }
 
-function endBattle(victory, ranAway){
+function endBattle(victory){
   state.battleOver = true;
   state.phase='over';
   el.cmdList.innerHTML='';
   setTimeout(()=>{
     el.endOverlay.classList.remove('hidden');
-    if(ranAway){
-      el.endTitle.textContent = 'にげきった';
-      el.endDesc.textContent = '安全な場所まで走って逃げた。';
-      el.endBtn.textContent = 'もういちど たたかう';
-    } else if(victory){
+    if(!victory){
+      el.endTitle.textContent = 'ぜんめつしました';
+      el.endDesc.textContent = '';
+      el.endBtn.textContent = 'はじめから';
+      state.endAction = 'restart';
+    } else if(state.round===3){
+      classChangeParty();
+      el.endTitle.textContent = 'へいわが おとずれた';
+      el.endDesc.textContent = 'ついに くらやみのしはいしゃを たおし、へいわが おとずれた!';
+      el.endBtn.textContent = 'はじめから';
+      state.endAction = 'restart';
+    } else {
       const changed = classChangeParty();
       el.endTitle.textContent = 'しょうり!';
       let desc = 'てきを ぜんめつさせた!';
@@ -1492,22 +1568,20 @@ function endBattle(victory, ranAway){
       }
       el.endDesc.textContent = desc;
       el.endBtn.textContent = 'つぎのたたかいへ';
-    } else {
-      el.endTitle.textContent = 'ぜんめつ...';
-      el.endDesc.textContent = 'パーティは たおれてしまった。';
-      el.endBtn.textContent = 'さいしょから やりなおす';
+      state.endAction = 'continue';
     }
   }, 500);
 }
 
 el.endBtn.addEventListener('click', ()=>{
   el.endOverlay.classList.add('hidden');
-  const wasWipe = el.endTitle.textContent==='ぜんめつ...';
-  if(wasWipe){
+  if(state.endAction==='restart'){
     state.party = PARTY_TEMPLATE();
     state.round = 1;
+    startBattle(1);
+  } else {
+    startBattle(state.round+1);
   }
-  startBattle(wasWipe ? 1 : state.round+1);
 });
 
 /* ================= boot ================= */
@@ -1532,11 +1606,11 @@ function startBattle(round){
   setTimeout(()=>{
     if(state.turnIndex < state.party.length){
       hideMessageWindow();
-      regenMp(currentActor());
+      applyTurnStartPassives(currentActor());
       renderStatus();
       renderCommands();
     }
-  }, 900);
+  }, 3000);
 }
 
 spawnStars();
