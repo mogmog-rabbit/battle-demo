@@ -654,14 +654,14 @@ function applyJobSkills(p){
     case 'knight':
       p.maxMp = Math.max(p.maxMp, 8); p.mp = p.maxMp;
       p.techniques = (p.techniques||[]).concat([
-        {name:'じゅうじぎり',mp:4,mult:1.8,type:'tech-atk-single'}
+        {name:'じゅうじぎり',mp:4,mult:2.7,type:'tech-atk-single'}
       ]);
       break;
     case 'blackmage':
       p.maxMp += 6; p.mp = p.maxMp;
       p.spells = (p.spells||[]).concat([
-        {name:'メテオ',mp:6,power:19,type:'atk-all'},
-        {name:'フレア',mp:12,power:36,type:'atk-single'}
+        {name:'メテオ',mp:16,power:19,type:'atk-all'},
+        {name:'フレア',mp:20,power:36,type:'atk-single'}
       ]);
       break;
     case 'whitemage':
@@ -672,7 +672,7 @@ function applyJobSkills(p){
       ]);
       break;
     case 'supermonk':
-      p.maxMp = Math.max(p.maxMp, 8); p.mp = p.maxMp;
+      p.maxMp = 12; p.mp = p.maxMp;
       p.techniques = (p.techniques||[]).concat([
         {name:'しんくうは',mp:4,mult:1.2,type:'tech-atk-all'}
       ]);
@@ -732,7 +732,8 @@ function randomEncounter(round){
 let state = {
   party: PARTY_TEMPLATE(),
   enemies: [],
-  round: 1,
+  round: 1,           // 現在の戦闘内でのターン数(戦闘ごとにリセット)
+  stage: 1,           // 何戦目か(1:草原 2:砂漠 3:城/ボス)
   turnIndex: 0,       // which party member is choosing
   actingLocked: false,
   queuedActions: [],  // actions for this round
@@ -1569,7 +1570,7 @@ function endBattle(victory){
       el.endDesc.textContent = '';
       el.endBtn.textContent = 'はじめから';
       state.endAction = 'restart';
-    } else if(state.round===3){
+    } else if(state.stage===3){
       classChangeParty();
       el.endTitle.textContent = 'へいわが おとずれた';
       el.endDesc.textContent = 'ついに くらやみのしはいしゃを たおし、へいわが おとずれた!';
@@ -1593,23 +1594,24 @@ el.endBtn.addEventListener('click', ()=>{
   el.endOverlay.classList.add('hidden');
   if(state.endAction==='restart'){
     state.party = PARTY_TEMPLATE();
-    state.round = 1;
+    state.stage = 1;
     startBattle(1);
   } else {
-    startBattle(state.round+1);
+    startBattle(state.stage+1);
   }
 });
 
 /* ================= boot ================= */
-function startBattle(round){
-  state.round = round || 1;
-  state.enemies = (state.round===3) ? makeBossEncounter() : randomEncounter(state.round);
+function startBattle(stage){
+  state.stage = stage || 1;
+  state.round = 1;
+  state.enemies = (state.stage===3) ? makeBossEncounter() : randomEncounter(state.stage);
   state.turnIndex = 0;
   state.queuedActions = [];
   state.battleOver = false;
   const gameEl = document.getElementById('game');
-  gameEl.classList.toggle('terrain-castle', state.round===3);
-  gameEl.classList.toggle('terrain-desert', state.round>=2 && state.round!==3);
+  gameEl.classList.toggle('terrain-castle', state.stage===3);
+  gameEl.classList.toggle('terrain-desert', state.stage>=2 && state.stage!==3);
   state.phase='command';
   state.party.forEach(p=>p.defending=false);
   while(state.turnIndex < state.party.length && !state.party[state.turnIndex].alive){
