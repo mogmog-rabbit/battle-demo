@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>フィールド・オブ・エコーズ - バトル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#090a1a;
+    --window-blue:#0018a8;
+    --window-blue-dark:#000860;
+    --paper:#f0f0e4;
+    --gold:#f8d870;
+    --hp-green:#58d858;
+    --hp-yellow:#f8d870;
+    --hp-red:#e85858;
+    --mp-blue:#68a8f8;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:#000;
+    font-family:'Noto Sans JP', sans-serif;
+    image-rendering:pixelated;
+    overflow:hidden;
+  }
+  #game{
+    width:100%;
+    aspect-ratio:16/10;
+    max-width:960px;
+    max-height:100vh;
+    margin:0 auto;
+    background:var(--bg-deep);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    border:4px solid #000;
+    box-shadow:0 0 0 3px #3a3a5a, 0 0 40px rgba(0,0,0,.8);
+    font-size:14px;
+    user-select:none;
+  }
+  @media (max-width:700px){
+    #game{font-size:10px;}
+  }
+
+  /* ---------- battlefield ---------- */
+  #battlefield{
+    flex:1;
+    position:relative;
+    background:
+      linear-gradient(to bottom, #1a1440 0%, #241a5c 35%, #3a2a6e 55%, #1f1436 100%);
+    overflow:hidden;
+    border-bottom:3px solid var(--gold);
+  }
+  #battlefield::before{ /* ground */
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:0;
+    height:22%;
+    background:repeating-linear-gradient(90deg,#241938,#241938 18px,#2c2044 18px,#2c2044 36px);
+    box-shadow:inset 0 6px 0 rgba(0,0,0,.35);
+  }
+  #stars{position:absolute;inset:0;pointer-events:none;}
+  .star{position:absolute;width:2px;height:2px;background:#fff;opacity:.6;animation:twinkle 2.4s infinite ease-in-out;}
+  @keyframes twinkle{0%,100%{opacity:.15;}50%{opacity:.8;}}
+
+  #enemy-row{
+    position:absolute;
+    left:6%;
+    top:14%;
+    width:46%;
+    height:60%;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    gap:4%;
+  }
+  #party-row{
+    position:absolute;
+    right:4%;
+    bottom:8%;
+    width:44%;
+    height:58%;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    gap:6%;
+  }
+
+  .unit{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    transition:transform .18s ease;
+    cursor:default;
+  }
+  .unit .shadow{
+    width:70%;
+    height:9px;
+    background:rgba(0,0,0,.5);
+    border-radius:50%;
+    margin-top:2px;
+    filter:blur(1px);
+  }
+  .unit.targetable{cursor:pointer;}
+  .unit.targetable:hover .sprite, .unit.selected-target .sprite{
+    filter:drop-shadow(0 0 6px var(--gold)) brightness(1.25);
+  }
+  .unit.dead{opacity:.25;filter:grayscale(1);}
+  .unit .hpbar-mini{
+    width:56px;
+    max-width:70%;
+    height:6px;
+    background:#111;
+    border:1px solid #000;
+    margin-top:4px;
+    box-shadow:0 0 0 1px #4a4a6a;
+  }
+  .unit .hpbar-mini > div{height:100%;background:var(--hp-green);transition:width .35s ease;}
+  .unit .enemy-name-tag{
+    font-size:.62em;
+    color:#ffe9a8;
+    margin-top:2px;
+    text-shadow:1px 1px 0 #000;
+  }
+
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+  @keyframes lungeRight{0%{transform:translateX(0);}45%{transform:translateX(60px) scale(1.05);}55%{transform:translateX(60px) scale(1.05);}100%{transform:translateX(0);}}
+  @keyframes lungeLeft{0%{transform:translateX(0);}45%{transform:translateX(-60px) scale(1.05);}55%{transform:translateX(-60px) scale(1.05);}100%{transform:translateX(0);}}
+  @keyframes flashHit{0%,100%{filter:none;}30%{filter:brightness(3) saturate(0) drop-shadow(0 0 8px #fff);}60%{filter:brightness(0.2) sepia(1) saturate(6) hue-rotate(-40deg);}}
+  @keyframes shakeSmall{0%,100%{transform:translateX(0);}20%{transform:translateX(-4px);}40%{transform:translateX(4px);}60%{transform:translateX(-3px);}80%{transform:translateX(3px);}}
+  @keyframes castGlow{0%,100%{filter:none;}50%{filter:brightness(1.8) drop-shadow(0 0 10px #b0e0ff);}}
+  @keyframes fadeOutUnit{to{opacity:0;transform:translateY(10px) scale(.85) rotate(8deg);}}
+
+  .unit.idle .sprite{animation:bob 1.6s infinite ease-in-out;}
+  .unit.attack-right .sprite{animation:lungeRight .5s ease;}
+  .unit.attack-left .sprite{animation:lungeLeft .5s ease;}
+  .unit.hit .sprite{animation:flashHit .45s ease;}
+  .unit.shake{animation:shakeSmall .4s ease;}
+  .unit.casting .sprite{animation:castGlow .6s ease 2;}
+  .unit.fading{animation:fadeOutUnit .6s forwards;}
+
+  .sprite{position:relative;}
+
+  /* pixel sprites built from stacked divs (box-shadow pixel grid) */
+  .px{
+    width:4px;height:4px;
+    position:absolute;
+    box-shadow: var(--pixels);
+  }
+
+  /* floating damage / heal numbers */
+  .dmg-pop{
+    position:absolute;
+    left:50%;top:-6px;
+    transform:translateX(-50%);
+    font-family:'Press Start 2P',monospace;
+    font-size:13px;
+    color:#fff;
+    text-shadow:2px 2px 0 #000, -1px -1px 0 #000;
+    pointer-events:none;
+    animation:popUp 1s ease forwards;
+    z-index:20;
+  }
+  .dmg-pop.heal{color:#8cffb0;}
+  .dmg-pop.miss{color:#cfcfe8;}
+  @keyframes popUp{
+    0%{opacity:0;transform:translate(-50%,6px) scale(.7);}
+    15%{opacity:1;transform:translate(-50%,-14px) scale(1.15);}
+    75%{opacity:1;transform:translate(-50%,-30px) scale(1);}
+    100%{opacity:0;transform:translate(-50%,-40px) scale(1);}
+  }
+
+  #flash-overlay{
+    position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:30;
+  }
+  .flash-on{animation:screenFlash .18s ease;}
+  @keyframes screenFlash{0%{opacity:.75;}100%{opacity:0;}}
+
+  /* ---------- bottom UI ---------- */
+  #ui-bottom{
+    height:36%;
+    display:flex;
+    flex-direction:column;
+    background:var(--bg-deep);
+    padding:6px;
+    gap:6px;
+  }
+  .window{
+    background:linear-gradient(#0b1470,#050a3c);
+    border:3px solid var(--paper);
+    box-shadow:inset 0 0 0 2px var(--window-blue-dark), 0 2px 0 rgba(0,0,0,.4);
+    border-radius:2px;
+    color:var(--paper);
+    padding:8px 10px;
+  }
+  #message-window{
+    flex:0 0 34%;
+    font-size:1.05em;
+    line-height:1.55;
+    display:flex;
+    align-items:center;
+    letter-spacing:.02em;
+  }
+  #message-window span.blinker{
+    display:inline-block;
+    margin-left:8px;
+    animation:blink 1s steps(1) infinite;
+  }
+  @keyframes blink{50%{opacity:0;}}
+
+  #lower-panels{
+    flex:1;
+    display:flex;
+    gap:6px;
+    min-height:0;
+  }
+  #command-window{
+    flex:0 0 32%;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    font-size:.95em;
+    overflow-y:auto;
+  }
+  #command-window .cmd-title{
+    color:var(--gold);
+    font-size:.85em;
+    margin-bottom:4px;
+    text-shadow:1px 1px 0 #000;
+  }
+  .cmd-item{
+    display:flex;align-items:center;gap:6px;
+    padding:3px 4px;cursor:pointer;
+    border-radius:2px;
+  }
+  .cmd-item .cursor{
+    width:10px;color:var(--gold);opacity:0;
+  }
+  .cmd-item.active .cursor{opacity:1;animation:blink .6s steps(1) infinite;}
+  .cmd-item.active{background:rgba(248,216,112,.12);}
+  .cmd-item.disabled{opacity:.35;cursor:default;}
+
+  #status-window{
+    flex:1;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:4px;
+    font-size:.85em;
+    overflow-y:auto;
+  }
+  .status-row{
+    display:grid;
+    grid-template-columns:44px 1fr 1fr;
+    align-items:center;
+    gap:6px;
+    padding:2px 4px;
+    border-radius:2px;
+  }
+  .status-row.acting{background:rgba(248,216,112,.16);}
+  .status-row .nm{
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    display:flex;align-items:center;gap:4px;
+  }
+  .status-row .nm .turnmark{color:var(--gold);width:8px;display:inline-block;}
+  .status-row.ko .nm{color:#8888a8;text-decoration:line-through;}
+  .bar-wrap{display:flex;align-items:center;gap:4px;}
+  .bar-label{width:16px;font-size:.85em;color:#b8c0ff;}
+  .bar-track{flex:1;height:9px;background:#000;border:1px solid #050a3c;box-shadow:0 0 0 1px #5060c0;}
+  .bar-track > div{height:100%;}
+  .hp-fill{background:linear-gradient(#7cf07c,var(--hp-green));}
+  .hp-fill.mid{background:linear-gradient(#f8e888,var(--hp-yellow));}
+  .hp-fill.low{background:linear-gradient(#f89898,var(--hp-red));}
+  .mp-fill{background:linear-gradient(#a8d0ff,var(--mp-blue));}
+  .num{font-size:.78em;color:#dfe4ff;width:52px;text-align:right;}
+
+  #target-window{
+    flex:0 0 34%;
+    display:flex;flex-direction:column;gap:2px;font-size:.95em;overflow-y:auto;
+  }
+
+  .hidden{display:none !important;}
+
+  #end-overlay{
+    position:absolute;inset:0;
+    background:rgba(0,0,0,.82);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:16px;color:var(--paper);text-align:center;z-index:50;
+  }
+  #end-overlay h2{
+    font-family:'Press Start 2P',monospace;
+    font-size:1.4em;color:var(--gold);
+    text-shadow:2px 2px 0 #000;
+    letter-spacing:.05em;
+  }
+  #end-overlay button{
+    font-family:'Noto Sans JP',sans-serif;
+    font-size:1em;
+    background:var(--window-blue);
+    color:#fff;
+    border:2px solid var(--paper);
+    padding:10px 22px;
+    cursor:pointer;
+    border-radius:2px;
+  }
+  #end-overlay button:hover{background:#1a2ac8;}
+  #end-overlay p{max-width:70%;line-height:1.6;color:#dfe4ff;font-size:.9em;}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="battlefield">
+    <div id="stars"></div>
+    <div id="enemy-row"></div>
+    <div id="party-row"></div>
+    <div id="flash-overlay"></div>
+    <div id="end-overlay" class="hidden">
+      <h2 id="end-title"></h2>
+      <p id="end-desc"></p>
+      <button id="end-btn">つぎのたたかいへ</button>
+    </div>
+  </div>
+
+  <div id="ui-bottom">
+    <div id="message-window" class="window">
+      <div id="message-text">たたかいがはじまった!</div>
+    </div>
+    <div id="lower-panels">
+      <div id="command-window" class="window">
+        <div class="cmd-title">コマンド</div>
+        <div id="cmd-list"></div>
+      </div>
+      <div id="target-window" class="window hidden">
+        <div class="cmd-title">たいしょうをえらぶ</div>
+        <div id="target-list"></div>
+      </div>
+      <div id="status-window" class="window"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ================= sprite pixel-art definitions ================= */
+/* Each sprite: grid of chars, palette maps char -> color. '.' = empty */
+const PALETTES = {
+  fighter:{'1':'#f2c199','2':'#c23b3b','3':'#5a3018','4':'#e0e0e0','5':'#8a1f1f'},
+  mage:   {'1':'#f2c199','2':'#3a4fc2','3':'#1c2668','4':'#f8d870','5':'#20306e'},
+  priest: {'1':'#f2c199','2':'#e8e8f0','3':'#c9a8ff','4':'#f8d870','5':'#8a6fc0'},
+  goblin: {'1':'#7bc95e','2':'#3f6b2a','3':'#c94b4b','4':'#1e2e14'},
+  slime:  {'1':'#4fd0e8','2':'#1a7a94','3':'#e8fbff'},
+  bat:    {'1':'#5a4a78','2':'#2c2140','3':'#e85858'},
+  ogre:   {'1':'#b06a3a','2':'#5c3418','3':'#e0d0b0','4':'#2a1a0c'}
+};
+
+const SPRITES = {
+  fighter:[
+    "..333..",
+    ".31113.",
+    ".31113.",
+    "..222..",
+    "4222225",
+    "422222.",
+    ".2222..",
+    ".2.2...",
+    ".2.2...",
+    "22.22.."
+  ],
+  mage:[
+    "..333..",
+    "334443.",
+    ".31113.",
+    "..222..",
+    ".22222.",
+    "222222.",
+    ".22222.",
+    ".22222.",
+    "..2.2..",
+    "..2.2.."
+  ],
+  priest:[
+    "..333..",
+    ".31113.",
+    ".31113.",
+    "..222..",
+    ".24442.",
+    "2222222",
+    ".22222.",
+    ".22222.",
+    "..2.2..",
+    "..2.2.."
+  ],
+  goblin:[
+    ".2..2.",
+    ".222..",
+    "211121",
+    ".1331.",
+    "..44..",
+    ".2222.",
+    "2.22.2"
+  ],
+  slime:[
+    "..111..",
+    ".11311.",
+    "1113311",
+    "1113311",
+    "222222.".replace(/2/g,'1'),
+    ".22222."
+  ],
+  bat:[
+    "1...1",
+    "11.11",
+    "132231",
+    ".111.",
+    ".1.1."
+  ],
+  ogre:[
+    "...44...",
+    "..3443..",
+    ".311113.",
+    ".311113.",
+    "..2222..",
+    "2222222.",
+    "222222.4",
+    ".22222..",
+    ".2.2.2..",
+    "22.2.22."
+  ]
+};
+
+function buildSpriteEl(kind, pxSize){
+  const pattern = SPRITES[kind];
+  const palette = PALETTES[kind];
+  const rows = pattern.length;
+  const cols = Math.max(...pattern.map(r=>r.length));
+  const wrap = document.createElement('div');
+  wrap.className = 'sprite';
+  wrap.style.width = (cols*pxSize)+'px';
+  wrap.style.height = (rows*pxSize)+'px';
+  let shadows = [];
+  for(let y=0;y<rows;y++){
+    const row = pattern[y];
+    for(let x=0;x<cols;x++){
+      const ch = row[x];
+      if(ch && ch!=='.' && palette[ch]){
+        shadows.push(`${x*pxSize}px ${y*pxSize}px 0 0 ${palette[ch]}`);
+      }
+    }
+  }
+  const px = document.createElement('div');
+  px.className='px';
+  px.style.setProperty('--pixels', shadows.join(','));
+  px.style.left='0';px.style.top='0';
+  wrap.appendChild(px);
+  return wrap;
+}
+
+/* ================= game data ================= */
+function makeChar(id,name,kind,hp,mp,atk,def,spd,spells){
+  return {id,name,kind,hp,maxHp:hp,mp,maxMp:mp,atk,def,spd,spells:spells||[],alive:true,isEnemy:false};
+}
+function makeEnemy(id,name,kind,hp,atk,def,spd,gold,exp){
+  return {id,name,kind,hp,maxHp:hp,atk,def,spd,gold,exp,alive:true,isEnemy:true};
+}
+
+const PARTY_TEMPLATE = ()=>[
+  makeChar('p0','ガイン','fighter',48,0,13,5,9,[]),
+  makeChar('p1','セレナ','mage',26,20,4,2,10,[
+    {name:'ファイア',mp:4,power:16,type:'atk-single'},
+    {name:'ブリザド',mp:6,power:22,type:'atk-single'}
+  ]),
+  makeChar('p2','ノーラ','priest',30,18,3,3,8,[
+    {name:'ケアル',mp:3,power:22,type:'heal-single'},
+    {name:'プロテス',mp:5,power:0,type:'buff-def'}
+  ])
+];
+
+const ENEMY_POOL = [
+  ()=>makeEnemy('slime1','スライム','slime',14,4,1,4,3,2),
+  ()=>makeEnemy('goblin1','ゴブリン','goblin',20,7,2,7,6,4),
+  ()=>makeEnemy('bat1','ダークバット','bat',12,5,1,11,4,3),
+  ()=>makeEnemy('ogre1','オーガ','ogre',46,11,4,5,18,12)
+];
+
+function randomEncounter(round){
+  const n = Math.min(4, 2 + Math.floor(Math.random()*2) + (round>2?1:0));
+  const list = [];
+  const pool = round>=3 ? ENEMY_POOL : ENEMY_POOL.slice(0,3);
+  for(let i=0;i<n;i++){
+    const maker = pool[Math.floor(Math.random()*pool.length)];
+    const e = maker();
+    e.id = e.id+'_'+i;
+    list.push(e);
+  }
+  return list;
+}
+
+/* ================= state ================= */
+let state = {
+  party: PARTY_TEMPLATE(),
+  enemies: [],
+  round: 1,
+  turnIndex: 0,       // which party member is choosing
+  actingLocked: false,
+  queuedActions: [],  // actions for this round
+  battleOver: false,
+  phase: 'command'    // command | target | resolving
+};
+
+const el = {
+  enemyRow: document.getElementById('enemy-row'),
+  partyRow: document.getElementById('party-row'),
+  msg: document.getElementById('message-text'),
+  cmdList: document.getElementById('cmd-list'),
+  targetWindow: document.getElementById('target-window'),
+  targetList: document.getElementById('target-list'),
+  statusWindow: document.getElementById('status-window'),
+  flash: document.getElementById('flash-overlay'),
+  endOverlay: document.getElementById('end-overlay'),
+  endTitle: document.getElementById('end-title'),
+  endDesc: document.getElementById('end-desc'),
+  endBtn: document.getElementById('end-btn'),
+};
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function setMessage(t){ el.msg.textContent = t; }
+
+/* ---------- stars background ---------- */
+function spawnStars(){
+  const container = document.getElementById('stars');
+  container.innerHTML='';
+  for(let i=0;i<28;i++){
+    const s = document.createElement('div');
+    s.className='star';
+    s.style.left = Math.random()*100+'%';
+    s.style.top = (Math.random()*55)+'%';
+    s.style.animationDelay = (Math.random()*2.4)+'s';
+    container.appendChild(s);
+  }
+}
+
+/* ---------- rendering units ---------- */
+function renderUnits(){
+  el.enemyRow.innerHTML='';
+  state.enemies.forEach(en=>{
+    const u = document.createElement('div');
+    u.className = 'unit idle' + (en.alive?'':' dead');
+    u.id = 'unit-'+en.id;
+    u.dataset.id = en.id;
+    const spriteScale = en.kind==='ogre' ? 6 : (en.kind==='slime'?6:5);
+    const sprite = buildSpriteEl(en.kind, spriteScale);
+    u.appendChild(sprite);
+    const shadow = document.createElement('div');
+    shadow.className='shadow';
+    u.appendChild(shadow);
+    const tag = document.createElement('div');
+    tag.className='enemy-name-tag';
+    tag.textContent = en.name;
+    u.appendChild(tag);
+    const hpMini = document.createElement('div');
+    hpMini.className='hpbar-mini';
+    const hpFill = document.createElement('div');
+    hpFill.style.width = Math.max(0,(en.hp/en.maxHp*100))+'%';
+    hpFill.style.background = en.hp/en.maxHp<0.3?'#e85858':(en.hp/en.maxHp<0.6?'#f8d870':'#58d858');
+    hpMini.appendChild(hpFill);
+    u.appendChild(hpMini);
+    el.enemyRow.appendChild(u);
+  });
+
+  el.partyRow.innerHTML='';
+  state.party.forEach(p=>{
+    const u = document.createElement('div');
+    u.className = 'unit idle' + (p.alive?'':' dead');
+    u.id = 'unit-'+p.id;
+    u.dataset.id = p.id;
+    const sprite = buildSpriteEl(p.kind, 6);
+    u.appendChild(sprite);
+    const shadow = document.createElement('div');
+    shadow.className='shadow';
+    u.appendChild(shadow);
+    el.partyRow.appendChild(u);
+  });
+}
+
+function renderStatus(){
+  el.statusWindow.innerHTML='';
+  state.party.forEach((p,i)=>{
+    const row = document.createElement('div');
+    row.className='status-row'+(!p.alive?' ko':'')+((state.phase!=='resolving' && i===state.turnIndex && p.alive)?' acting':'');
+    const hpPct = p.hp/p.maxHp;
+    const hpClass = hpPct<0.3?'low':(hpPct<0.6?'mid':'');
+    row.innerHTML = `
+      <div class="nm"><span class="turnmark">${(state.phase!=='resolving' && i===state.turnIndex && p.alive)?'▶':''}</span>${p.name}</div>
+      <div class="bar-wrap">
+        <span class="bar-label">HP</span>
+        <div class="bar-track"><div class="hp-fill ${hpClass}" style="width:${Math.max(0,hpPct*100)}%"></div></div>
+        <span class="num">${p.hp}/${p.maxHp}</span>
+      </div>
+      <div class="bar-wrap">
+        <span class="bar-label">MP</span>
+        <div class="bar-track"><div class="mp-fill" style="width:${p.maxMp?Math.max(0,p.mp/p.maxMp*100):0}%"></div></div>
+        <span class="num">${p.mp}/${p.maxMp}</span>
+      </div>`;
+    el.statusWindow.appendChild(row);
+  });
+}
+
+/* ---------- effects ---------- */
+function popDamage(targetId, text, kind){
+  const u = document.getElementById('unit-'+targetId);
+  if(!u) return;
+  const d = document.createElement('div');
+  d.className = 'dmg-pop'+(kind?(' '+kind):'');
+  d.textContent = text;
+  u.appendChild(d);
+  setTimeout(()=>d.remove(), 1000);
+}
+function screenFlash(){
+  el.flash.classList.remove('flash-on');
+  void el.flash.offsetWidth;
+  el.flash.classList.add('flash-on');
+}
+function updateHpBarsOnly(){
+  state.enemies.forEach(en=>{
+    const u = document.getElementById('unit-'+en.id);
+    if(!u) return;
+    const fill = u.querySelector('.hpbar-mini > div');
+    if(fill){
+      fill.style.width = Math.max(0,(en.hp/en.maxHp*100))+'%';
+      fill.style.background = en.hp/en.maxHp<0.3?'#e85858':(en.hp/en.maxHp<0.6?'#f8d870':'#58d858');
+    }
+  });
+  renderStatus();
+}
+
+async function animateAttack(attackerId, targetId, isPartyAttacker){
+  const a = document.getElementById('unit-'+attackerId);
+  const t = document.getElementById('unit-'+targetId);
+  if(a){
+    a.classList.remove('idle');
+    a.classList.add(isPartyAttacker?'attack-left':'attack-right');
+  }
+  await sleep(220);
+  if(t){
+    t.classList.add('hit','shake');
+    screenFlash();
+  }
+  await sleep(260);
+  if(a){ a.classList.remove('attack-left','attack-right'); a.classList.add('idle'); }
+  if(t){ t.classList.remove('hit','shake'); }
+}
+async function animateCast(casterId){
+  const c = document.getElementById('unit-'+casterId);
+  if(c){ c.classList.remove('idle'); c.classList.add('casting'); }
+  await sleep(500);
+  screenFlash();
+  await sleep(250);
+  if(c){ c.classList.remove('casting'); c.classList.add('idle'); }
+}
+async function animateDeath(unitId){
+  const u = document.getElementById('unit-'+unitId);
+  if(u){ u.classList.add('fading'); }
+  await sleep(500);
+}
+
+/* ================= command UI ================= */
+const COMMANDS = [
+  {key:'fight', label:'たたかう'},
+  {key:'magic', label:'まほう'},
+  {key:'defend', label:'ぼうぎょ'},
+  {key:'run', label:'にげる'}
+];
+
+function currentActor(){
+  return state.party[state.turnIndex];
+}
+
+function renderCommands(){
+  el.targetWindow.classList.add('hidden');
+  el.cmdList.innerHTML='';
+  const actor = currentActor();
+  if(!actor || !actor.alive){ return; }
+  COMMANDS.forEach(cmd=>{
+    const disabled = cmd.key==='magic' && actor.spells.length===0;
+    const div = document.createElement('div');
+    div.className = 'cmd-item'+(disabled?' disabled':'');
+    div.innerHTML = `<span class="cursor">▶</span><span>${cmd.label}</span>`;
+    if(!disabled){
+      div.addEventListener('click', ()=>chooseCommand(cmd.key));
+      div.addEventListener('mouseenter', ()=>{
+        [...el.cmdList.children].forEach(c=>c.classList.remove('active'));
+        div.classList.add('active');
+      });
+    }
+    el.cmdList.appendChild(div);
+  });
+  if(el.cmdList.children.length){ el.cmdList.children[0].classList.add('active'); }
+}
+
+function clearTargetHighlights(){
+  document.querySelectorAll('.unit').forEach(u=>{
+    u.classList.remove('targetable','selected-target');
+  });
+}
+
+function chooseCommand(key){
+  const actor = currentActor();
+  if(key==='defend'){
+    queueAction({actorId:actor.id, isEnemy:false, type:'defend'});
+    advanceTurn();
+    return;
+  }
+  if(key==='run'){
+    tryRun();
+    return;
+  }
+  if(key==='fight'){
+    showTargetSelect('enemy', (targetId)=>{
+      queueAction({actorId:actor.id, isEnemy:false, type:'attack', targetId});
+      advanceTurn();
+    }, 'こうげきするてきをえらんでください');
+    return;
+  }
+  if(key==='magic'){
+    showSpellSelect(actor);
+    return;
+  }
+}
+
+function showSpellSelect(actor){
+  el.targetWindow.classList.remove('hidden');
+  document.getElementById('target-window').querySelector('.cmd-title').textContent='まほうをえらぶ';
+  el.targetList.innerHTML='';
+  actor.spells.forEach(sp=>{
+    const disabled = actor.mp < sp.mp;
+    const div = document.createElement('div');
+    div.className='cmd-item'+(disabled?' disabled':'');
+    div.innerHTML = `<span class="cursor">▶</span><span>${sp.name}　(MP${sp.mp})</span>`;
+    if(!disabled){
+      div.addEventListener('click', ()=>{
+        if(sp.type==='heal-single' || sp.type==='buff-def'){
+          showTargetSelect('party', (targetId)=>{
+            queueAction({actorId:actor.id, isEnemy:false, type:'spell', spell:sp, targetId});
+            advanceTurn();
+          }, 'たいしょうをえらんでください');
+        } else {
+          showTargetSelect('enemy', (targetId)=>{
+            queueAction({actorId:actor.id, isEnemy:false, type:'spell', spell:sp, targetId});
+            advanceTurn();
+          }, 'こうげきするてきをえらんでください');
+        }
+      });
+      div.addEventListener('mouseenter', ()=>{
+        [...el.targetList.children].forEach(c=>c.classList.remove('active'));
+        div.classList.add('active');
+      });
+    }
+    el.targetList.appendChild(div);
+  });
+  const back = document.createElement('div');
+  back.className='cmd-item';
+  back.innerHTML = `<span class="cursor">▶</span><span>もどる</span>`;
+  back.addEventListener('click', ()=>{ el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; });
+  el.targetList.appendChild(back);
+}
+
+function showTargetSelect(side, onPick, promptText){
+  clearTargetHighlights();
+  el.targetWindow.classList.remove('hidden');
+  document.getElementById('target-window').querySelector('.cmd-title').textContent = promptText;
+  el.targetList.innerHTML='';
+  const list = side==='enemy' ? state.enemies : state.party;
+  list.filter(u=>u.alive).forEach(u=>{
+    const uEl = document.getElementById('unit-'+u.id);
+    if(uEl) uEl.classList.add('targetable');
+    const div = document.createElement('div');
+    div.className='cmd-item';
+    const hpInfo = u.isEnemy ? '' : `　HP ${u.hp}/${u.maxHp}`;
+    div.innerHTML = `<span class="cursor">▶</span><span>${u.name}${hpInfo}</span>`;
+    div.addEventListener('mouseenter', ()=>{
+      [...el.targetList.children].forEach(c=>c.classList.remove('active'));
+      div.classList.add('active');
+      clearTargetHighlights();
+      document.querySelectorAll('.unit').forEach(x=>{ if(list.some(l=>l.alive && 'unit-'+l.id===x.id)) x.classList.add('targetable'); });
+      if(uEl) uEl.classList.add('selected-target');
+    });
+    div.addEventListener('click', ()=>{
+      clearTargetHighlights();
+      el.targetWindow.classList.add('hidden');
+      onPick(u.id);
+    });
+    el.targetList.appendChild(div);
+  });
+  if(el.targetList.children.length){ el.targetList.children[0].classList.add('active'); }
+}
+
+function queueAction(action){
+  state.queuedActions.push(action);
+}
+
+function advanceTurn(){
+  clearTargetHighlights();
+  state.turnIndex++;
+  while(state.turnIndex < state.party.length && !state.party[state.turnIndex].alive){
+    state.turnIndex++;
+  }
+  renderStatus();
+  if(state.turnIndex >= state.party.length){
+    startResolvePhase();
+  } else {
+    renderCommands();
+  }
+}
+
+function tryRun(){
+  setMessage('にげだした!');
+  state.phase='resolving';
+  renderCommands();
+  el.targetWindow.classList.add('hidden');
+  setTimeout(()=>{
+    endBattle(false, true);
+  }, 900);
+}
+
+/* ================= resolve phase ================= */
+async function startResolvePhase(){
+  state.phase='resolving';
+  el.cmdList.innerHTML = '<div class="cmd-item disabled"><span class="cursor"></span><span>コマンドじっこうちゅう...</span></div>';
+  el.targetWindow.classList.add('hidden');
+  renderStatus();
+
+  // enemy actions
+  state.enemies.filter(e=>e.alive).forEach(en=>{
+    const aliveParty = state.party.filter(p=>p.alive);
+    if(aliveParty.length===0) return;
+    const target = aliveParty[Math.floor(Math.random()*aliveParty.length)];
+    state.queuedActions.push({actorId:en.id, isEnemy:true, type:'attack', targetId:target.id});
+  });
+
+  // sort by speed desc
+  const allUnits = {};
+  state.party.forEach(p=>allUnits[p.id]=p);
+  state.enemies.forEach(e=>allUnits[e.id]=e);
+  const actions = state.queuedActions.slice().sort((a,b)=>{
+    const ua = allUnits[a.actorId], ub = allUnits[b.actorId];
+    return (ub? ub.spd:0) - (ua? ua.spd:0);
+  });
+  state.queuedActions = [];
+
+  for(const action of actions){
+    if(state.battleOver) break;
+    const actor = allUnits[action.actorId];
+    if(!actor || !actor.alive) continue;
+    await executeAction(action, allUnits);
+    if(checkBattleEnd()) { state.battleOver = true; break; }
+  }
+
+  if(!state.battleOver){
+    nextRound();
+  }
+}
+
+async function executeAction(action, allUnits){
+  const actor = allUnits[action.actorId];
+  if(action.type==='defend'){
+    setMessage(`${actor.name}は みをまもっている!`);
+    actor.defending = true;
+    await sleep(700);
+    return;
+  }
+  if(action.type==='attack'){
+    const target = allUnits[action.targetId];
+    if(!target || !target.alive){ return; }
+    setMessage(`${actor.name}の こうげき!`);
+    await animateAttack(actor.id, target.id, !actor.isEnemy);
+    let dmg = Math.max(1, Math.round(actor.atk*(0.85+Math.random()*0.4) - target.def*(target.defending?1.6:1)));
+    const miss = Math.random() < 0.05;
+    if(miss){
+      popDamage(target.id, 'MISS', 'miss');
+      setMessage(`${actor.name}の こうげきは はずれた!`);
+      await sleep(500);
+      return;
+    }
+    target.hp = Math.max(0, target.hp - dmg);
+    popDamage(target.id, dmg, null);
+    updateHpBarsOnly();
+    setMessage(`${target.name}に ${dmg}の ダメージ!`);
+    await sleep(450);
+    if(target.hp<=0){
+      target.alive = false;
+      setMessage(`${target.name}を たおした!`);
+      await animateDeath(target.id);
+      await sleep(300);
+    }
+    return;
+  }
+  if(action.type==='spell'){
+    const sp = action.spell;
+    if(actor.mp < sp.mp){
+      setMessage(`${actor.name}は MPが たりない!`);
+      await sleep(600);
+      return;
+    }
+    actor.mp -= sp.mp;
+    setMessage(`${actor.name}は ${sp.name}を となえた!`);
+    await animateCast(actor.id);
+    if(sp.type==='atk-single'){
+      const target = allUnits[action.targetId];
+      if(!target || !target.alive) return;
+      let dmg = Math.max(1, Math.round(sp.power*(0.85+Math.random()*0.3)));
+      target.hp = Math.max(0, target.hp - dmg);
+      popDamage(target.id, dmg, null);
+      updateHpBarsOnly();
+      setMessage(`${target.name}に ${dmg}の ダメージ!`);
+      await sleep(450);
+      if(target.hp<=0){
+        target.alive=false;
+        setMessage(`${target.name}を たおした!`);
+        await animateDeath(target.id);
+        await sleep(300);
+      }
+    } else if(sp.type==='heal-single'){
+      const target = allUnits[action.targetId];
+      if(!target) return;
+      const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
+      target.hp = Math.min(target.maxHp, target.hp+heal);
+      popDamage(target.id, '+'+heal, 'heal');
+      renderStatus();
+      setMessage(`${target.name}の HPが ${heal} かいふくした!`);
+      await sleep(500);
+    } else if(sp.type==='buff-def'){
+      const target = allUnits[action.targetId];
+      if(!target) return;
+      target.def += 4;
+      popDamage(target.id, 'DEF UP', 'heal');
+      setMessage(`${target.name}の ぼうぎょりょくが あがった!`);
+      await sleep(500);
+    }
+    updateHpBarsOnly();
+    return;
+  }
+}
+
+function checkBattleEnd(){
+  const partyAlive = state.party.some(p=>p.alive);
+  const enemiesAlive = state.enemies.some(e=>e.alive);
+  if(!partyAlive){ endBattle(false, false); return true; }
+  if(!enemiesAlive){ endBattle(true, false); return true; }
+  return false;
+}
+
+function nextRound(){
+  state.round++;
+  state.turnIndex = 0;
+  while(state.turnIndex < state.party.length && !state.party[state.turnIndex].alive){
+    state.turnIndex++;
+  }
+  state.party.forEach(p=>p.defending=false);
+  state.phase='command';
+  if(state.turnIndex >= state.party.length){
+    // shouldn't happen (means all dead, handled above)
+    return;
+  }
+  setMessage(`${currentActor().name}の ばん!`);
+  renderStatus();
+  renderCommands();
+}
+
+function endBattle(victory, ranAway){
+  state.battleOver = true;
+  state.phase='over';
+  el.cmdList.innerHTML='';
+  setTimeout(()=>{
+    el.endOverlay.classList.remove('hidden');
+    if(ranAway){
+      el.endTitle.textContent = 'にげきった';
+      el.endDesc.textContent = '安全な場所まで走って逃げた。';
+      el.endBtn.textContent = 'もういちど たたかう';
+    } else if(victory){
+      const gold = state.enemies.reduce((s,e)=>s+e.gold,0);
+      const exp = state.enemies.reduce((s,e)=>s+e.exp,0);
+      el.endTitle.textContent = 'しょうり!';
+      el.endDesc.textContent = `てきを ぜんめつさせた! ${gold}ゴールドと ${exp}けいけんちを てにいれた。`;
+      el.endBtn.textContent = 'つぎのたたかいへ';
+    } else {
+      el.endTitle.textContent = 'ぜんめつ...';
+      el.endDesc.textContent = 'パーティは たおれてしまった。';
+      el.endBtn.textContent = 'さいしょから やりなおす';
+    }
+  }, 500);
+}
+
+el.endBtn.addEventListener('click', ()=>{
+  el.endOverlay.classList.add('hidden');
+  const wasWipe = el.endTitle.textContent==='ぜんめつ...';
+  if(wasWipe){
+    state.party = PARTY_TEMPLATE();
+    state.round = 1;
+  }
+  startBattle(wasWipe ? 1 : state.round+1);
+});
+
+/* ================= boot ================= */
+function startBattle(round){
+  state.round = round || 1;
+  state.enemies = randomEncounter(state.round);
+  state.turnIndex = 0;
+  state.queuedActions = [];
+  state.battleOver = false;
+  state.phase='command';
+  state.party.forEach(p=>p.defending=false);
+  while(state.turnIndex < state.party.length && !state.party[state.turnIndex].alive){
+    state.turnIndex++;
+  }
+  renderUnits();
+  renderStatus();
+  const names = state.enemies.map(e=>e.name).join('、');
+  setMessage(`${names}が あらわれた!`);
+  setTimeout(()=>{
+    if(state.turnIndex < state.party.length){
+      setMessage(`${currentActor().name}の ばん!`);
+      renderCommands();
+    }
+  }, 900);
+}
+
+spawnStars();
+startBattle(1);
+
+})();
+</script>
+</body>
+</html>
