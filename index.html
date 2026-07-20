@@ -64,6 +64,16 @@
     --ground-tex-a:#d4af6a;
     --ground-tex-b:#e0bd7a;
   }
+  #game.terrain-castle{
+    --sky-1:#332c42;
+    --sky-2:#241f30;
+    --sky-3:#171320;
+    --ground-1:#6b6b74;
+    --ground-2:#54545c;
+    --ground-3:#3a3a40;
+    --ground-tex-a:#4a4a52;
+    --ground-tex-b:#59595f;
+  }
   #game::before{ /* ground texture, continues behind all UI */
     content:"";
     position:absolute;
@@ -380,7 +390,7 @@
     border-radius:2px;
   }
   #end-overlay button:hover{background:#1a2ac8;}
-  #end-overlay p{max-width:70%;line-height:1.6;color:#dfe4ff;font-size:.9em;}
+  #end-overlay p{max-width:70%;line-height:1.6;color:#dfe4ff;font-size:.9em;white-space:pre-line;}
 </style>
 </head>
 <body>
@@ -428,7 +438,8 @@ const PALETTES = {
   goblin: {'1':'#7bc95e','2':'#3f6b2a','3':'#c94b4b','4':'#1e2e14'},
   slime:  {'1':'#4fd0e8','2':'#1a7a94','3':'#e8fbff'},
   bat:    {'1':'#5a4a78','2':'#2c2140','3':'#e85858'},
-  ogre:   {'1':'#b06a3a','2':'#5c3418','3':'#e0d0b0','4':'#2a1a0c'}
+  ogre:   {'1':'#b06a3a','2':'#5c3418','3':'#e0d0b0','4':'#2a1a0c'},
+  darklord:{'1':'#4a2a6e','2':'#150c20','3':'#ff3355','4':'#c9a8ff','5':'#d4af37'}
 };
 
 const SPRITES = {
@@ -515,6 +526,24 @@ const SPRITES = {
     ".22222..",
     ".2.2.2..",
     "22.2.22."
+  ],
+  darklord:[
+    "...222...",
+    "..22222..",
+    ".2211122.",
+    ".2213132.",
+    ".2211122.",
+    "..21112..",
+    "..25552..",
+    ".2111112.",
+    ".2111112.",
+    "211111112",
+    "211111112",
+    ".2111112.",
+    ".2111112.",
+    "..21112..",
+    "..25552..",
+    "..2...2.."
   ]
 };
 
@@ -576,12 +605,15 @@ function makeChar(id,name,kind,hp,mp,atk,def,spd,spells,techniques){
 function makeEnemy(id,name,kind,hp,atk,def,spd,gold,exp){
   return {id,name,kind,hp,maxHp:hp,atk,def,spd,gold,exp,alive:true,isEnemy:true};
 }
+function makeBoss(id,name,kind,hp,atk,def,spd,abilities){
+  return {id,name,kind,hp,maxHp:hp,atk,def,spd,mp:999,maxMp:999,gold:0,exp:0,alive:true,isEnemy:true,abilities};
+}
 
 const EVOLUTION = {
   fighter:{kind:'knight', name:'ナイト'},
   mage:{kind:'blackmage', name:'くろまどうし'},
   priest:{kind:'whitemage', name:'しろまどうし'},
-  monk:{kind:'supermonk', name:'スーパーモンク'}
+  monk:{kind:'supermonk', name:'Sモンク'}
 };
 
 const PARTY_TEMPLATE = ()=>[
@@ -638,7 +670,7 @@ function classChangeParty(){
     p.name = eve.name;
     p.evolved = true;
     applyJobSkills(p);
-    changed.push(`${oldName}が${eve.name}に`);
+    changed.push({from:oldName, to:eve.name});
   });
   if(changed.length){
     renderUnits();
@@ -653,6 +685,15 @@ const ENEMY_POOL = [
   ()=>makeEnemy('bat1','ダークバット','bat',12,5,1,11,4,3),
   ()=>makeEnemy('ogre1','オーガ','ogre',46,11,4,5,18,12)
 ];
+
+function makeBossEncounter(){
+  return [makeBoss('boss1','くらやみのしはいしゃ','darklord',150,15,5,8,[
+    {name:'attack-basic', type:'attack-basic', mp:0, weight:3},
+    {name:'ダークファイア', type:'atk-single', power:24, mp:0, weight:3},
+    {name:'あんこくは', type:'atk-all', power:14, mp:0, weight:2},
+    {name:'ダークヒール', type:'heal-self', power:35, mp:0, weight:2}
+  ])];
+}
 
 function randomEncounter(round){
   const n = Math.min(4, 2 + Math.floor(Math.random()*2) + (round>2?1:0));
@@ -727,7 +768,7 @@ function renderUnits(){
     hoverArrow.className = 'target-hover-arrow';
     hoverArrow.textContent = '▼';
     u.appendChild(hoverArrow);
-    const spriteScale = en.kind==='ogre' ? 6 : (en.kind==='slime'?6:5);
+    const spriteScale = en.kind==='darklord' ? 9 : (en.kind==='ogre' ? 6 : (en.kind==='slime'?6:5));
     const sprite = buildSpriteEl(en.kind, spriteScale);
     u.appendChild(sprite);
     const shadow = document.createElement('div');
@@ -875,7 +916,6 @@ const COMMANDS = [
   {key:'skill', label:'とくぎ'},
   {key:'magic', label:'まほう'},
   {key:'defend', label:'ぼうぎょ'},
-  {key:'run', label:'にげる'},
   {key:'back', label:'もどる'}
 ];
 
@@ -923,10 +963,6 @@ function chooseCommand(key){
   if(key==='defend'){
     queueAction({actorId:actor.id, isEnemy:false, type:'defend'});
     advanceTurn();
-    return;
-  }
-  if(key==='run'){
-    tryRun();
     return;
   }
   if(key==='fight'){
@@ -1127,17 +1163,17 @@ function goBackOneTurn(){
   renderCommands();
 }
 
-function tryRun(){
-  setMessage('にげだした!');
-  state.phase='resolving';
-  renderCommands();
-  el.targetWindow.classList.add('hidden');
-  setTimeout(()=>{
-    endBattle(false, true);
-  }, 900);
+/* ================= resolve phase ================= */
+function pickWeighted(list){
+  const total = list.reduce((s,a)=>s+(a.weight||1),0);
+  let r = Math.random()*total;
+  for(const a of list){
+    r -= (a.weight||1);
+    if(r<=0) return a;
+  }
+  return list[list.length-1];
 }
 
-/* ================= resolve phase ================= */
 async function startResolvePhase(){
   state.phase='resolving';
   el.cmdList.innerHTML = '<div class="cmd-item disabled"><span class="cursor"></span><span>コマンドじっこうちゅう...</span></div>';
@@ -1148,8 +1184,26 @@ async function startResolvePhase(){
   state.enemies.filter(e=>e.alive).forEach(en=>{
     const aliveParty = state.party.filter(p=>p.alive);
     if(aliveParty.length===0) return;
-    const target = aliveParty[Math.floor(Math.random()*aliveParty.length)];
-    state.queuedActions.push({actorId:en.id, isEnemy:true, type:'attack', targetId:target.id});
+    if(en.abilities && en.abilities.length){
+      let pick = pickWeighted(en.abilities);
+      if(pick.type==='heal-self' && en.hp/en.maxHp>0.85){
+        pick = en.abilities.find(a=>a.type==='attack-basic') || pick;
+      }
+      if(pick.type==='attack-basic'){
+        const target = aliveParty[Math.floor(Math.random()*aliveParty.length)];
+        state.queuedActions.push({actorId:en.id, isEnemy:true, type:'attack', targetId:target.id});
+      } else if(pick.type==='atk-single'){
+        const target = aliveParty[Math.floor(Math.random()*aliveParty.length)];
+        state.queuedActions.push({actorId:en.id, isEnemy:true, type:'spell', spell:pick, targetId:target.id});
+      } else if(pick.type==='atk-all'){
+        state.queuedActions.push({actorId:en.id, isEnemy:true, type:'spell', spell:pick});
+      } else if(pick.type==='heal-self'){
+        state.queuedActions.push({actorId:en.id, isEnemy:true, type:'spell', spell:pick, targetId:en.id});
+      }
+    } else {
+      const target = aliveParty[Math.floor(Math.random()*aliveParty.length)];
+      state.queuedActions.push({actorId:en.id, isEnemy:true, type:'attack', targetId:target.id});
+    }
   });
 
   // sort by speed desc
@@ -1175,6 +1229,14 @@ async function startResolvePhase(){
   }
 }
 
+function resolveTarget(action, actor, allUnits){
+  let target = allUnits[action.targetId];
+  if(target && target.alive) return target;
+  const pool = actor.isEnemy ? state.party.filter(p=>p.alive) : state.enemies.filter(e=>e.alive);
+  if(pool.length===0) return null;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
 async function executeAction(action, allUnits){
   const actor = allUnits[action.actorId];
   if(action.type==='defend'){
@@ -1184,8 +1246,8 @@ async function executeAction(action, allUnits){
     return;
   }
   if(action.type==='attack'){
-    const target = allUnits[action.targetId];
-    if(!target || !target.alive){ return; }
+    const target = resolveTarget(action, actor, allUnits);
+    if(!target){ return; }
     setMessage(`${actor.name}の こうげき!`);
     await animateAttack(actor.id, target.id, !actor.isEnemy);
     let dmg = Math.max(1, Math.round(actor.atk*(0.85+Math.random()*0.4) - target.def*(target.defending?1.6:1)));
@@ -1222,8 +1284,8 @@ async function executeAction(action, allUnits){
     setMessage(`${actor.name}は ${sp.name}を となえた!`);
     await animateCast(actor.id);
     if(sp.type==='atk-single'){
-      const target = allUnits[action.targetId];
-      if(!target || !target.alive) return;
+      const target = resolveTarget(action, actor, allUnits);
+      if(!target) return;
       let dmg = Math.max(1, Math.round(sp.power*(0.85+Math.random()*0.3)));
       target.hp = Math.max(0, target.hp - dmg);
       popDamage(target.id, dmg, null);
@@ -1235,6 +1297,8 @@ async function executeAction(action, allUnits){
         setMessage(`${target.name}を たおした!`);
         await animateDeath(target.id);
         await sleep(300);
+      } else {
+        await applyPassiveOnHit(target, dmg, actor);
       }
     } else if(sp.type==='heal-single'){
       const target = allUnits[action.targetId];
@@ -1257,7 +1321,7 @@ async function executeAction(action, allUnits){
       setMessage(`${actor.name}の ${sp.name}で なかまぜんいんが かいふくした!`);
       await sleep(450);
     } else if(sp.type==='atk-all'){
-      const targets = state.enemies.filter(e=>e.alive);
+      const targets = actor.isEnemy ? state.party.filter(p=>p.alive) : state.enemies.filter(e=>e.alive);
       for(const target of targets){
         let dmg = Math.max(1, Math.round(sp.power*(0.85+Math.random()*0.3)));
         target.hp = Math.max(0, target.hp - dmg);
@@ -1266,11 +1330,20 @@ async function executeAction(action, allUnits){
         if(target.hp<=0){
           target.alive=false;
           await animateDeath(target.id);
+        } else {
+          await applyPassiveOnHit(target, dmg, actor);
         }
         await sleep(250);
       }
-      setMessage(`${actor.name}の ${sp.name}が てき ぜんたいを おそった!`);
+      setMessage(`${actor.name}の ${sp.name}が ぜんたいを おそった!`);
       await sleep(400);
+    } else if(sp.type==='heal-self'){
+      const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
+      actor.hp = Math.min(actor.maxHp, actor.hp+heal);
+      popDamage(actor.id, '+'+heal, 'heal');
+      updateHpBarsOnly();
+      setMessage(`${actor.name}は じぶんを かいふくした! ${heal} かいふく!`);
+      await sleep(500);
     } else if(sp.type==='buff-def'){
       const target = allUnits[action.targetId];
       if(!target) return;
@@ -1292,8 +1365,8 @@ async function executeAction(action, allUnits){
     actor.mp -= tech.mp;
     setMessage(`${actor.name}の ${tech.name}!`);
     if(tech.type==='tech-atk-single'){
-      const target = allUnits[action.targetId];
-      if(!target || !target.alive) return;
+      const target = resolveTarget(action, actor, allUnits);
+      if(!target) return;
       await animateAttack(actor.id, target.id, !actor.isEnemy);
       let dmg = Math.max(1, Math.round(actor.atk*tech.mult*(0.85+Math.random()*0.3) - target.def*(target.defending?1.6:1)));
       target.hp = Math.max(0, target.hp - dmg);
@@ -1338,9 +1411,10 @@ async function applyPassiveOnHit(target, dmg, attacker){
     updateHpBarsOnly();
     setMessage(`${target.name}は ダメージから ${heal} かいふくした!`);
     await sleep(450);
-  } else if(target.kind==='supermonk'){
+  } else if(target.kind==='supermonk' || target.kind==='monk'){
     if(attacker && attacker.alive && attacker.isEnemy){
-      const counter = Math.max(1, Math.round(dmg/4));
+      const ratio = target.kind==='supermonk' ? 2 : 4;
+      const counter = Math.max(1, Math.round(dmg/ratio));
       attacker.hp = Math.max(0, attacker.hp-counter);
       setMessage(`${target.name}の カウンター!`);
       await animateAttack(target.id, attacker.id, !target.isEnemy);
@@ -1410,13 +1484,11 @@ function endBattle(victory, ranAway){
       el.endDesc.textContent = '安全な場所まで走って逃げた。';
       el.endBtn.textContent = 'もういちど たたかう';
     } else if(victory){
-      const gold = state.enemies.reduce((s,e)=>s+e.gold,0);
-      const exp = state.enemies.reduce((s,e)=>s+e.exp,0);
       const changed = classChangeParty();
       el.endTitle.textContent = 'しょうり!';
-      let desc = `てきを ぜんめつさせた! ${gold}ゴールドと ${exp}けいけんちを てにいれた。`;
+      let desc = 'てきを ぜんめつさせた!';
       if(changed.length){
-        desc += ` ${changed.join('、')} クラスチェンジした!`;
+        desc += '\n\nクラスチェンジした!\n' + changed.map(c=>`・${c.from}→${c.to}`).join('\n');
       }
       el.endDesc.textContent = desc;
       el.endBtn.textContent = 'つぎのたたかいへ';
@@ -1441,11 +1513,13 @@ el.endBtn.addEventListener('click', ()=>{
 /* ================= boot ================= */
 function startBattle(round){
   state.round = round || 1;
-  state.enemies = randomEncounter(state.round);
+  state.enemies = (state.round===3) ? makeBossEncounter() : randomEncounter(state.round);
   state.turnIndex = 0;
   state.queuedActions = [];
   state.battleOver = false;
-  document.getElementById('game').classList.toggle('terrain-desert', state.round>=2);
+  const gameEl = document.getElementById('game');
+  gameEl.classList.toggle('terrain-castle', state.round===3);
+  gameEl.classList.toggle('terrain-desert', state.round>=2 && state.round!==3);
   state.phase='command';
   state.party.forEach(p=>p.defending=false);
   while(state.turnIndex < state.party.length && !state.party[state.turnIndex].alive){
