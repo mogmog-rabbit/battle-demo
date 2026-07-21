@@ -58,6 +58,9 @@
     overflow:hidden;
   }
   #game.terrain-desert{
+    --sky-1:#ff8c42;
+    --sky-2:#ff6b6b;
+    --sky-3:#ffd27a;
     --ground-1:#e0c07f;
     --ground-2:#c9a058;
     --ground-3:#a67c3d;
@@ -185,7 +188,37 @@
   }
   @keyframes burstPop{
     0%{ opacity:.95; width:8px; height:8px; box-shadow:0 0 0 0 currentColor;}
-    100%{ opacity:0; width:64px; height:64px; box-shadow:0 0 26px 8px currentColor;}
+    100%{ opacity:0; width:var(--burst-size,64px); height:var(--burst-size,64px); box-shadow:0 0 26px 8px currentColor;}
+  }
+  .impact-particle{
+    position:absolute;
+    left:50%; top:42%;
+    width:7px;height:7px;
+    border-radius:50%;
+    background:currentColor;
+    pointer-events:none;
+    z-index:19;
+    animation:particleFly .55s ease-out forwards;
+  }
+  @keyframes particleFly{
+    0%{ transform:translate(-50%,-50%) translate(0,0) scale(1); opacity:1;}
+    100%{ transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) scale(.25); opacity:0;}
+  }
+  .slash-mark{
+    position:absolute;
+    left:50%; top:42%;
+    width:5px;
+    background:linear-gradient(to bottom, transparent, currentColor 20%, currentColor 80%, transparent);
+    pointer-events:none;
+    z-index:20;
+    opacity:0;
+    box-shadow:0 0 10px 2px currentColor;
+    animation:slashSweep .6s ease-out forwards;
+  }
+  @keyframes slashSweep{
+    0%{ opacity:0; transform:translate(-50%,-50%) rotate(var(--slash-angle,-30deg)) scaleY(.1) scaleX(1.6);}
+    28%{ opacity:1; transform:translate(-50%,-50%) rotate(var(--slash-angle,-30deg)) scaleY(1) scaleX(1);}
+    100%{ opacity:0; transform:translate(-50%,-50%) rotate(var(--slash-angle,-30deg)) scaleY(1) scaleX(1);}
   }
   .turn-arrow{
     position:absolute;
@@ -352,6 +385,7 @@
     gap:1px;
     font-size:1.05em;
     overflow-y:auto;
+    overflow-x:auto;
   }
   .status-row{
     display:grid;
@@ -633,7 +667,7 @@ const EVOLUTION = {
 
 const PARTY_TEMPLATE = ()=>[
   makeChar('p0','せんし','fighter',48,4,13,5,9,[],[
-    {name:'りょうてぎり',mp:2,mult:1.5,type:'tech-atk-single'}
+    {name:'両手斬り',mp:4,mult:1.5,type:'tech-atk-single'}
   ]),
   makeChar('p1','まほうつかい','mage',26,20,4,2,10,[
     {name:'ファイア',mp:4,power:18,type:'atk-single'},
@@ -644,8 +678,7 @@ const PARTY_TEMPLATE = ()=>[
     {name:'プロテス',mp:5,power:0,type:'buff-def'}
   ]),
   makeChar('p3','モンク','monk',34,0,10,3,14,[],[
-    {name:'せいけんづき',mp:0,mult:1.3,type:'tech-atk-single'},
-    {name:'しんらばんしょう',mp:12,mult:3.9,type:'tech-atk-single'}
+    {name:'正拳突き',mp:0,mult:1.3,type:'tech-atk-single'}
   ])
 ];
 
@@ -654,27 +687,29 @@ function applyJobSkills(p){
     case 'knight':
       p.maxMp = Math.max(p.maxMp, 8); p.mp = p.maxMp;
       p.techniques = (p.techniques||[]).concat([
-        {name:'じゅうじぎり',mp:4,mult:2.7,type:'tech-atk-single'}
+        {name:'十字斬り',mp:6,mult:1.89,type:'tech-atk-single'}
       ]);
       break;
     case 'blackmage':
       p.maxMp += 6; p.mp = p.maxMp;
       p.spells = (p.spells||[]).concat([
         {name:'メテオ',mp:16,power:19,type:'atk-all'},
-        {name:'フレア',mp:20,power:36,type:'atk-single'}
+        {name:'フレア',mp:20,power:29,type:'atk-single'}
       ]);
       break;
     case 'whitemage':
       p.maxMp += 6; p.mp = p.maxMp;
       p.spells = (p.spells||[]).concat([
         {name:'ケアルガ',mp:12,power:22,type:'heal-all'},
-        {name:'プロテガ',mp:6,power:4,type:'buff-def-all'}
+        {name:'プロテガ',mp:12,power:4,type:'buff-def-all'},
+        {name:'ポーリー',mp:10,power:24,type:'atk-single'}
       ]);
       break;
     case 'supermonk':
       p.maxMp = 12; p.mp = p.maxMp;
       p.techniques = (p.techniques||[]).concat([
-        {name:'しんくうは',mp:4,mult:1.2,type:'tech-atk-all'}
+        {name:'回し蹴り',mp:4,mult:1.2,type:'tech-atk-all'},
+        {name:'爆裂拳',mp:12,mult:3.12,type:'tech-atk-single'}
       ]);
       break;
   }
@@ -741,7 +776,8 @@ let state = {
   phase: 'command',    // command | target | resolving
   targetSelectMode: false,
   activeTargetConfirm: null,
-  endAction: null
+  endAction: null,
+  tauntTargetId: null
 };
 
 const el = {
@@ -761,6 +797,85 @@ const el = {
 };
 
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+/* ---------- sound effects (synthesized, no audio files needed) ---------- */
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e){ return null; }
+  }
+  if(audioCtx.state==='suspended'){ audioCtx.resume(); }
+  return audioCtx;
+}
+function playTone(freq, duration, type, volume, delay){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const startAt = ctx.currentTime + (delay||0);
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type || 'square';
+  osc.frequency.setValueAtTime(freq, startAt);
+  gain.gain.setValueAtTime(0, startAt);
+  gain.gain.linearRampToValueAtTime(volume||0.16, startAt+0.008);
+  gain.gain.exponentialRampToValueAtTime(0.001, startAt+(duration||0.09));
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(startAt);
+  osc.stop(startAt+(duration||0.09)+0.02);
+}
+function sfxCursor(){ playTone(720, 0.045, 'square', 0.10); }
+function sfxConfirm(){ playTone(880, 0.06, 'square', 0.15); playTone(1320, 0.08, 'square', 0.13, 0.05); }
+function sfxCancel(){ playTone(420, 0.07, 'square', 0.13); playTone(280, 0.09, 'square', 0.11, 0.05); }
+function sfxDisabled(){ playTone(180, 0.08, 'sawtooth', 0.08); }
+
+function sfxSlash(){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const t = ctx.currentTime;
+  const bufferSize = Math.floor(ctx.sampleRate*0.16);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){
+    data[i] = (Math.random()*2-1) * Math.pow(1 - i/bufferSize, 1.5);
+  }
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.setValueAtTime(3400, t);
+  filter.frequency.exponentialRampToValueAtTime(700, t+0.16);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.28, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t+0.17);
+  noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  noise.start(t); noise.stop(t+0.18);
+}
+
+function sfxImpactThud(){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const t = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(170, t);
+  osc.frequency.exponentialRampToValueAtTime(48, t+0.18);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.4, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t+0.22);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(t); osc.stop(t+0.24);
+}
+
+function playAttackSfx(actor){
+  if(!actor) return;
+  if(actor.kind==='fighter' || actor.kind==='knight'){
+    sfxSlash();
+  } else {
+    sfxImpactThud();
+  }
+}
+
 function setMessage(t){ el.msg.textContent = t; el.messageWindow.classList.remove('hidden'); }
 function hideMessageWindow(){ el.messageWindow.classList.add('hidden'); }
 
@@ -872,6 +987,9 @@ function renderStatus(){
     el.statusWindow.appendChild(row);
   });
   updateTurnIndicator();
+  if(state.targetSelectMode){
+    el.statusWindow.scrollLeft = el.statusWindow.scrollWidth;
+  }
 }
 
 /* ---------- effects ---------- */
@@ -925,25 +1043,65 @@ const EFFECT_COLORS = {
   'ケアルガ':'#44ff88',
   'プロテス':'#66e0ff',
   'プロテガ':'#66e0ff',
+  'ポーリー':'#ffffff',
   'メテオ':'#111111',
   'フレア':'#ff2200',
-  'しんくうは':'#ffffff',
-  'せいけんづき':'#ff9933',
-  'しんらばんしょう':'#ffcc00',
-  'りょうてぎり':'#ffe066',
-  'じゅうじぎり':'#ffe066'
+  '回し蹴り':'#ffffff',
+  '正拳突き':'#ff9933',
+  '爆裂拳':'#ffcc00',
+  '両手斬り':'#ffe066',
+  '十字斬り':'#ffe066'
 };
 
-function spawnImpactBurst(unitId, color){
+function spawnImpactBurst(unitId, color, power){
   if(!color) return;
   const u = document.getElementById('unit-'+unitId);
   if(!u) return;
+  const intensity = Math.min(3, Math.max(0.6, (power||16)/16));
+  const burstSize = Math.round(46 + intensity*38);
+
   const b = document.createElement('div');
   b.className='impact-burst';
   b.style.color = color;
   b.style.background = color;
+  b.style.setProperty('--burst-size', burstSize+'px');
   u.appendChild(b);
   setTimeout(()=>b.remove(), 520);
+
+  const particleCount = Math.round(4 + intensity*6);
+  for(let i=0;i<particleCount;i++){
+    const angle = (Math.PI*2*i/particleCount) + (Math.random()*0.6-0.3);
+    const dist = 20 + intensity*24 + Math.random()*14;
+    const dx = (Math.cos(angle)*dist).toFixed(1)+'px';
+    const dy = (Math.sin(angle)*dist*0.7).toFixed(1)+'px';
+    const p = document.createElement('div');
+    p.className='impact-particle';
+    p.style.color = color;
+    p.style.setProperty('--dx', dx);
+    p.style.setProperty('--dy', dy);
+    u.appendChild(p);
+    setTimeout(()=>p.remove(), 600);
+  }
+}
+
+function spawnSlashEffect(unitId, color, power, pattern){
+  const u = document.getElementById('unit-'+unitId);
+  if(!u) return;
+  const intensity = Math.min(3, Math.max(0.6, (power||16)/16));
+  const angles = pattern==='cross' ? [45, -45] : [45];
+  const heightPct = Math.round(58 + intensity*16);
+  const thickness = Math.round(4 + intensity*2);
+  angles.forEach((angle, i)=>{
+    const s = document.createElement('div');
+    s.className='slash-mark';
+    s.style.color = color || '#f0f0f0';
+    s.style.height = heightPct+'%';
+    s.style.width = thickness+'px';
+    s.style.setProperty('--slash-angle', angle+'deg');
+    s.style.animationDelay = (i*110)+'ms';
+    u.appendChild(s);
+    setTimeout(()=>s.remove(), 750+i*110);
+  });
 }
 
 async function animateCast(casterId, color){
@@ -965,10 +1123,12 @@ async function animateDeath(unitId){
 
 /* ================= command UI ================= */
 const COMMANDS = [
-  {key:'fight', label:'たたかう'},
+  {key:'fight', label:'こうげき'},
   {key:'skill', label:'とくぎ'},
   {key:'magic', label:'まほう'},
   {key:'defend', label:'ぼうぎょ'},
+  {key:'charge', label:'ためる'},
+  {key:'taunt', label:'ちょうはつ'},
   {key:'back', label:'もどる'}
 ];
 
@@ -987,15 +1147,20 @@ function renderCommands(){
   const actor = currentActor();
   if(!actor || !actor.alive){ return; }
   COMMANDS.forEach(cmd=>{
+    const isMonkClass = (actor.kind==='monk' || actor.kind==='supermonk');
+    const isFighterClass = (actor.kind==='fighter' || actor.kind==='knight');
     const disabled = (cmd.key==='magic' && actor.spells.length===0)
       || (cmd.key==='skill' && actor.techniques.length===0)
-      || (cmd.key==='back' && state.turnIndex<=0);
+      || (cmd.key==='back' && state.turnIndex<=0)
+      || (cmd.key==='charge' && !isMonkClass)
+      || (cmd.key==='taunt' && (!isFighterClass || actor.mp<2));
     const div = document.createElement('div');
     div.className = 'cmd-item'+(disabled?' disabled':'');
     div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${cmd.label}</span>`;
     if(!disabled){
-      div.addEventListener('click', ()=>chooseCommand(cmd.key));
+      div.addEventListener('click', ()=>{ (cmd.key==='back' ? sfxCancel() : sfxConfirm()); chooseCommand(cmd.key); });
       div.addEventListener('mouseenter', ()=>{
+        sfxCursor();
         [...el.cmdList.children].forEach(c=>c.classList.remove('active'));
         div.classList.add('active');
       });
@@ -1037,6 +1202,16 @@ function chooseCommand(key){
     goBackOneTurn();
     return;
   }
+  if(key==='charge'){
+    queueAction({actorId:actor.id, isEnemy:false, type:'charge'});
+    advanceTurn();
+    return;
+  }
+  if(key==='taunt'){
+    queueAction({actorId:actor.id, isEnemy:false, type:'taunt'});
+    advanceTurn();
+    return;
+  }
 }
 
 function showSpellSelect(actor){
@@ -1050,6 +1225,7 @@ function showSpellSelect(actor){
     div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${sp.name}　(MP${sp.mp})</span>`;
     if(!disabled){
       div.addEventListener('click', ()=>{
+        sfxConfirm();
         if(sp.type==='atk-all' || sp.type==='heal-all' || sp.type==='buff-def-all'){
           el.targetWindow.classList.add('hidden');
           queueAction({actorId:actor.id, isEnemy:false, type:'spell', spell:sp});
@@ -1067,16 +1243,20 @@ function showSpellSelect(actor){
         }
       });
       div.addEventListener('mouseenter', ()=>{
+        sfxCursor();
         [...el.targetList.children].forEach(c=>c.classList.remove('active'));
         div.classList.add('active');
       });
+    } else {
+      div.addEventListener('mouseenter', ()=>{ sfxDisabled(); });
     }
     el.targetList.appendChild(div);
   });
   const back = document.createElement('div');
   back.className='cmd-item';
   back.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>もどる</span>`;
-  back.addEventListener('click', ()=>{ el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; });
+  back.addEventListener('click', ()=>{ sfxCancel(); el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; });
+  back.addEventListener('mouseenter', ()=>{ sfxCursor(); });
   el.targetList.appendChild(back);
 }
 
@@ -1092,6 +1272,7 @@ function showSkillSelect(actor){
     div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${tech.name}${mpTag}</span>`;
     if(!disabled){
       div.addEventListener('click', ()=>{
+        sfxConfirm();
         if(tech.type==='tech-atk-all'){
           el.targetWindow.classList.add('hidden');
           queueAction({actorId:actor.id, isEnemy:false, type:'tech', tech, targetAll:true});
@@ -1104,16 +1285,20 @@ function showSkillSelect(actor){
         }
       });
       div.addEventListener('mouseenter', ()=>{
+        sfxCursor();
         [...el.targetList.children].forEach(c=>c.classList.remove('active'));
         div.classList.add('active');
       });
+    } else {
+      div.addEventListener('mouseenter', ()=>{ sfxDisabled(); });
     }
     el.targetList.appendChild(div);
   });
   const back = document.createElement('div');
   back.className='cmd-item';
   back.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>もどる</span>`;
-  back.addEventListener('click', ()=>{ el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; });
+  back.addEventListener('click', ()=>{ sfxCancel(); el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; });
+  back.addEventListener('mouseenter', ()=>{ sfxCursor(); });
   el.targetList.appendChild(back);
 }
 
@@ -1128,6 +1313,7 @@ function showTargetSelect(side, onPick, promptText){
   const aliveList = list.filter(u=>u.alive);
 
   function confirmPick(id){
+    sfxConfirm();
     clearTargetHighlights();
     el.targetWindow.classList.add('hidden');
     state.targetSelectMode = false;
@@ -1145,6 +1331,7 @@ function showTargetSelect(side, onPick, promptText){
     const hpInfo = u.isEnemy ? '' : `　HP ${u.hp}/${u.maxHp}`;
     div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${u.name}${hpInfo}</span>`;
     div.addEventListener('mouseenter', ()=>{
+      sfxCursor();
       highlightTarget(u.id, aliveList);
     });
     div.addEventListener('click', ()=> confirmPick(u.id));
@@ -1170,6 +1357,7 @@ function setupBattlefieldTargetDelegation(){
     if(unitEl.classList.contains('selected-target')) return;
     document.querySelectorAll('.unit.targetable').forEach(u=>u.classList.remove('selected-target'));
     unitEl.classList.add('selected-target');
+    sfxCursor();
     document.querySelectorAll('#target-list .cmd-item').forEach(c=>{
       c.classList.toggle('active', c.dataset.targetId===unitEl.dataset.id);
     });
@@ -1227,6 +1415,14 @@ function pickWeighted(list){
   return list[list.length-1];
 }
 
+function pickPartyTarget(aliveParty){
+  if(state.tauntTargetId){
+    const t = aliveParty.find(p=>p.id===state.tauntTargetId);
+    if(t) return t;
+  }
+  return aliveParty[Math.floor(Math.random()*aliveParty.length)];
+}
+
 async function startResolvePhase(){
   state.phase='resolving';
   el.cmdList.innerHTML = '<div class="cmd-item disabled"><span class="cursor"></span><span>コマンドじっこうちゅう...</span></div>';
@@ -1243,10 +1439,10 @@ async function startResolvePhase(){
         pick = en.abilities.find(a=>a.type==='attack-basic') || pick;
       }
       if(pick.type==='attack-basic'){
-        const target = aliveParty[Math.floor(Math.random()*aliveParty.length)];
+        const target = pickPartyTarget(aliveParty);
         state.queuedActions.push({actorId:en.id, isEnemy:true, type:'attack', targetId:target.id});
       } else if(pick.type==='atk-single'){
-        const target = aliveParty[Math.floor(Math.random()*aliveParty.length)];
+        const target = pickPartyTarget(aliveParty);
         state.queuedActions.push({actorId:en.id, isEnemy:true, type:'spell', spell:pick, targetId:target.id});
       } else if(pick.type==='atk-all'){
         state.queuedActions.push({actorId:en.id, isEnemy:true, type:'spell', spell:pick});
@@ -1254,16 +1450,18 @@ async function startResolvePhase(){
         state.queuedActions.push({actorId:en.id, isEnemy:true, type:'spell', spell:pick, targetId:en.id});
       }
     } else {
-      const target = aliveParty[Math.floor(Math.random()*aliveParty.length)];
+      const target = pickPartyTarget(aliveParty);
       state.queuedActions.push({actorId:en.id, isEnemy:true, type:'attack', targetId:target.id});
     }
   });
 
-  // sort by speed desc
+  // sort by speed desc (挑発を使ったキャラは最速で行動)
   const allUnits = {};
   state.party.forEach(p=>allUnits[p.id]=p);
   state.enemies.forEach(e=>allUnits[e.id]=e);
   const actions = state.queuedActions.slice().sort((a,b)=>{
+    if(a.type==='taunt' && b.type!=='taunt') return -1;
+    if(b.type==='taunt' && a.type!=='taunt') return 1;
     const ua = allUnits[a.actorId], ub = allUnits[b.actorId];
     return (ub? ub.spd:0) - (ua? ua.spd:0);
   });
@@ -1285,17 +1483,39 @@ async function startResolvePhase(){
 function resolveTarget(action, actor, allUnits){
   let target = allUnits[action.targetId];
   if(target && target.alive) return target;
-  const pool = actor.isEnemy ? state.party.filter(p=>p.alive) : state.enemies.filter(e=>e.alive);
+  if(actor.isEnemy){
+    const aliveParty = state.party.filter(p=>p.alive);
+    if(aliveParty.length===0) return null;
+    return pickPartyTarget(aliveParty);
+  }
+  const pool = state.enemies.filter(e=>e.alive);
   if(pool.length===0) return null;
   return pool[Math.floor(Math.random()*pool.length)];
 }
 
 async function executeAction(action, allUnits){
   const actor = allUnits[action.actorId];
+  if(actor && actor.charging && action.type!=='attack' && action.type!=='charge'){
+    actor.charging = false; // 攻撃以外を選ぶとためた力は不発
+  }
+  if(action.type==='charge'){
+    actor.charging = true;
+    setMessage(`${actor.name}は ちからを ためている!`);
+    await sleep(1500);
+    return;
+  }
+  if(action.type==='taunt'){
+    actor.mp = Math.max(0, actor.mp-2);
+    actor.taunting = true;
+    state.tauntTargetId = actor.id;
+    setMessage(`${actor.name}の ちょうはつ! てきの こうげきを ひきつけている!`);
+    await sleep(1500);
+    return;
+  }
   if(action.type==='defend'){
     setMessage(`${actor.name}は みをまもっている!`);
     actor.defending = true;
-    await sleep(700);
+    await sleep(1500);
     return;
   }
   if(action.type==='attack'){
@@ -1304,23 +1524,34 @@ async function executeAction(action, allUnits){
     setMessage(`${actor.name}の こうげき!`);
     await animateAttack(actor.id, target.id, !actor.isEnemy);
     let dmg = Math.max(1, Math.round(actor.atk*(0.85+Math.random()*0.4) - target.def*(target.defending?1.6:1)));
+    if(actor.charging){
+      dmg = Math.round(dmg*2.5);
+      actor.charging = false;
+    }
+    if(target.taunting){
+      dmg = Math.max(1, Math.round(dmg/2));
+    }
     const miss = Math.random() < 0.05;
     if(miss){
       popDamage(target.id, 'MISS', 'miss');
       setMessage(`${actor.name}の こうげきは はずれた!`);
-      await sleep(500);
+      await sleep(1500);
       return;
     }
     target.hp = Math.max(0, target.hp - dmg);
     popDamage(target.id, dmg, null);
+    playAttackSfx(actor);
+    if(actor.kind==='fighter' || actor.kind==='knight'){
+      spawnSlashEffect(target.id, '#f0f0f0', dmg, 'single');
+    }
     updateHpBarsOnly();
     setMessage(`${target.name}に ${dmg}の ダメージ!`);
-    await sleep(450);
+    await sleep(1500);
     if(target.hp<=0){
       target.alive = false;
       setMessage(`${target.name}を たおした!`);
       await animateDeath(target.id);
-      await sleep(300);
+      await sleep(1500);
     } else {
       await applyPassiveOnHit(target, dmg, actor);
     }
@@ -1330,7 +1561,7 @@ async function executeAction(action, allUnits){
     const sp = action.spell;
     if(actor.mp < sp.mp){
       setMessage(`${actor.name}は MPが たりない!`);
-      await sleep(600);
+      await sleep(1500);
       return;
     }
     actor.mp -= sp.mp;
@@ -1340,17 +1571,19 @@ async function executeAction(action, allUnits){
       const target = resolveTarget(action, actor, allUnits);
       if(!target) return;
       let dmg = Math.max(1, Math.round(sp.power*(0.85+Math.random()*0.3)));
+      if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
       target.hp = Math.max(0, target.hp - dmg);
-      spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
+      spawnImpactBurst(target.id, EFFECT_COLORS[sp.name], dmg);
+      playAttackSfx(actor);
       popDamage(target.id, dmg, null);
       updateHpBarsOnly();
       setMessage(`${target.name}に ${dmg}の ダメージ!`);
-      await sleep(450);
+      await sleep(1500);
       if(target.hp<=0){
         target.alive=false;
         setMessage(`${target.name}を たおした!`);
         await animateDeath(target.id);
-        await sleep(300);
+        await sleep(1500);
       } else {
         await applyPassiveOnHit(target, dmg, actor);
       }
@@ -1359,29 +1592,31 @@ async function executeAction(action, allUnits){
       if(!target) return;
       const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
       target.hp = Math.min(target.maxHp, target.hp+heal);
-      spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
+      spawnImpactBurst(target.id, EFFECT_COLORS[sp.name], heal);
       popDamage(target.id, '+'+heal, 'heal');
       renderStatus();
       setMessage(`${target.name}の HPが ${heal} かいふくした!`);
-      await sleep(500);
+      await sleep(1500);
     } else if(sp.type==='heal-all'){
       const targets = state.party.filter(p=>p.alive);
       for(const target of targets){
         const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
         target.hp = Math.min(target.maxHp, target.hp+heal);
-        spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
+        spawnImpactBurst(target.id, EFFECT_COLORS[sp.name], heal);
         popDamage(target.id, '+'+heal, 'heal');
         await sleep(150);
       }
       renderStatus();
       setMessage(`${actor.name}の ${sp.name}で なかまぜんいんが かいふくした!`);
-      await sleep(450);
+      await sleep(1500);
     } else if(sp.type==='atk-all'){
       const targets = actor.isEnemy ? state.party.filter(p=>p.alive) : state.enemies.filter(e=>e.alive);
       for(const target of targets){
         let dmg = Math.max(1, Math.round(sp.power*(0.85+Math.random()*0.3)));
+        if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
         target.hp = Math.max(0, target.hp - dmg);
-        spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
+        spawnImpactBurst(target.id, EFFECT_COLORS[sp.name], dmg);
+        playAttackSfx(actor);
         popDamage(target.id, dmg, null);
         updateHpBarsOnly();
         if(target.hp<=0){
@@ -1393,15 +1628,15 @@ async function executeAction(action, allUnits){
         await sleep(250);
       }
       setMessage(`${actor.name}の ${sp.name}が ぜんたいを おそった!`);
-      await sleep(400);
+      await sleep(1500);
     } else if(sp.type==='heal-self'){
       const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
       actor.hp = Math.min(actor.maxHp, actor.hp+heal);
-      spawnImpactBurst(actor.id, EFFECT_COLORS[sp.name]);
+      spawnImpactBurst(actor.id, EFFECT_COLORS[sp.name], heal);
       popDamage(actor.id, '+'+heal, 'heal');
       updateHpBarsOnly();
       setMessage(`${actor.name}は じぶんを かいふくした! ${heal} かいふく!`);
-      await sleep(500);
+      await sleep(1500);
     } else if(sp.type==='buff-def'){
       const target = allUnits[action.targetId];
       if(!target) return;
@@ -1409,7 +1644,7 @@ async function executeAction(action, allUnits){
       target.def += 4;
       popDamage(target.id, 'DEF UP', 'heal');
       setMessage(`${target.name}の ぼうぎょりょくが あがった!`);
-      await sleep(500);
+      await sleep(1500);
     } else if(sp.type==='buff-def-all'){
       const targets = state.party.filter(p=>p.alive);
       for(const target of targets){
@@ -1419,7 +1654,7 @@ async function executeAction(action, allUnits){
         await sleep(150);
       }
       setMessage(`${actor.name}の ${sp.name}で なかまぜんいんの ぼうぎょりょくが あがった!`);
-      await sleep(450);
+      await sleep(1500);
     }
     updateHpBarsOnly();
     return;
@@ -1428,7 +1663,7 @@ async function executeAction(action, allUnits){
     const tech = action.tech;
     if(actor.mp < tech.mp){
       setMessage(`${actor.name}は MPが たりない!`);
-      await sleep(600);
+      await sleep(1500);
       return;
     }
     actor.mp -= tech.mp;
@@ -1438,25 +1673,32 @@ async function executeAction(action, allUnits){
       if(!target) return;
       await animateAttack(actor.id, target.id, !actor.isEnemy);
       let dmg = Math.max(1, Math.round(actor.atk*tech.mult*(0.85+Math.random()*0.3) - target.def*(target.defending?1.6:1)));
+      if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
       target.hp = Math.max(0, target.hp - dmg);
-      spawnImpactBurst(target.id, EFFECT_COLORS[tech.name]);
+      spawnImpactBurst(target.id, EFFECT_COLORS[tech.name], dmg);
+      playAttackSfx(actor);
+      if(actor.kind==='fighter' || actor.kind==='knight'){
+        spawnSlashEffect(target.id, EFFECT_COLORS[tech.name], dmg, 'cross');
+      }
       popDamage(target.id, dmg, null);
       updateHpBarsOnly();
       setMessage(`${target.name}に ${dmg}の ダメージ!`);
-      await sleep(450);
+      await sleep(1500);
       if(target.hp<=0){
         target.alive=false;
         setMessage(`${target.name}を たおした!`);
         await animateDeath(target.id);
-        await sleep(300);
+        await sleep(1500);
       }
     } else if(tech.type==='tech-atk-all'){
       const targets = state.enemies.filter(e=>e.alive);
       for(const target of targets){
         await animateAttack(actor.id, target.id, !actor.isEnemy);
         let dmg = Math.max(1, Math.round(actor.atk*tech.mult*(0.85+Math.random()*0.3) - target.def*(target.defending?1.6:1)));
+        if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
         target.hp = Math.max(0, target.hp - dmg);
-        spawnImpactBurst(target.id, EFFECT_COLORS[tech.name]);
+        spawnImpactBurst(target.id, EFFECT_COLORS[tech.name], dmg);
+        playAttackSfx(actor);
         popDamage(target.id, dmg, null);
         updateHpBarsOnly();
         if(target.hp<=0){
@@ -1466,7 +1708,7 @@ async function executeAction(action, allUnits){
         await sleep(250);
       }
       setMessage(`${actor.name}の ${tech.name}が てき ぜんたいを おそった!`);
-      await sleep(400);
+      await sleep(1500);
     }
     updateHpBarsOnly();
     return;
@@ -1482,7 +1724,7 @@ async function applyPassiveOnHit(target, dmg, attacker){
     popDamage(target.id, '+'+heal, 'heal');
     updateHpBarsOnly();
     setMessage(`${target.name}は ダメージから ${heal} かいふくした!`);
-    await sleep(450);
+    await sleep(1500);
   } else if(target.kind==='supermonk' || target.kind==='monk'){
     if(attacker && attacker.alive && attacker.isEnemy){
       const ratio = target.kind==='supermonk' ? 2 : 4;
@@ -1493,12 +1735,12 @@ async function applyPassiveOnHit(target, dmg, attacker){
       popDamage(attacker.id, counter, null);
       updateHpBarsOnly();
       setMessage(`${attacker.name}に ${counter}の ダメージ!`);
-      await sleep(400);
+      await sleep(1500);
       if(attacker.hp<=0){
         attacker.alive=false;
         setMessage(`${attacker.name}を たおした!`);
         await animateDeath(attacker.id);
-        await sleep(300);
+        await sleep(1500);
       }
       updateHpBarsOnly();
     }
@@ -1546,7 +1788,8 @@ function nextRound(){
   while(state.turnIndex < state.party.length && !state.party[state.turnIndex].alive){
     state.turnIndex++;
   }
-  state.party.forEach(p=>p.defending=false);
+  state.party.forEach(p=>{ p.defending=false; p.taunting=false; });
+  state.tauntTargetId = null;
   state.phase='command';
   if(state.turnIndex >= state.party.length){
     // shouldn't happen (means all dead, handled above)
@@ -1573,7 +1816,7 @@ function endBattle(victory){
     } else if(state.stage===3){
       classChangeParty();
       el.endTitle.textContent = 'へいわが おとずれた';
-      el.endDesc.textContent = 'ついに くらやみのしはいしゃを たおし、へいわが おとずれた!';
+      el.endDesc.textContent = 'ついに くらやみのしはいしゃを たおした!\n\nへいわが おとずれた!';
       el.endBtn.textContent = 'はじめから';
       state.endAction = 'restart';
     } else {
@@ -1591,6 +1834,7 @@ function endBattle(victory){
 }
 
 el.endBtn.addEventListener('click', ()=>{
+  sfxConfirm();
   el.endOverlay.classList.add('hidden');
   if(state.endAction==='restart'){
     state.party = PARTY_TEMPLATE();
@@ -1612,8 +1856,9 @@ function startBattle(stage){
   const gameEl = document.getElementById('game');
   gameEl.classList.toggle('terrain-castle', state.stage===3);
   gameEl.classList.toggle('terrain-desert', state.stage>=2 && state.stage!==3);
-  state.phase='command';
-  state.party.forEach(p=>p.defending=false);
+  state.phase='intro';
+  state.party.forEach(p=>{ p.defending=false; p.taunting=false; });
+  state.tauntTargetId = null;
   while(state.turnIndex < state.party.length && !state.party[state.turnIndex].alive){
     state.turnIndex++;
   }
@@ -1623,6 +1868,7 @@ function startBattle(stage){
   setMessage(`${names}が あらわれた!`);
   setTimeout(()=>{
     if(state.turnIndex < state.party.length){
+      state.phase='command';
       hideMessageWindow();
       applyTurnStartPassives(currentActor());
       renderStatus();
