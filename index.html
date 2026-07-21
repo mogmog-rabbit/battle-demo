@@ -58,9 +58,9 @@
     overflow:hidden;
   }
   #game.terrain-desert{
-    --sky-1:#ff8c42;
-    --sky-2:#ff6b6b;
-    --sky-3:#ffd27a;
+    --sky-1:#c9642e;
+    --sky-2:#b8443f;
+    --sky-3:#d9a05a;
     --ground-1:#e0c07f;
     --ground-2:#c9a058;
     --ground-3:#a67c3d;
@@ -77,16 +77,39 @@
     --ground-tex-a:#4a4a52;
     --ground-tex-b:#59595f;
   }
-  #game::before{ /* ground texture, continues behind all UI */
+  #game::before{ /* ground texture: grass tufts (default/grassland) */
     content:"";
     position:absolute;
     left:0;right:0;
     top:11%;bottom:0;
-    background:repeating-linear-gradient(90deg,var(--ground-tex-a),var(--ground-tex-a) 18px,var(--ground-tex-b) 18px,var(--ground-tex-b) 36px);
-    opacity:.45;
+    background:
+      radial-gradient(ellipse at 25% 15%, rgba(255,255,255,.10), transparent 55%),
+      repeating-linear-gradient(115deg, rgba(0,0,0,.06) 0 3px, transparent 3px 14px),
+      repeating-linear-gradient(65deg, rgba(255,255,255,.05) 0 2px, transparent 2px 12px),
+      repeating-radial-gradient(circle at 6px 6px, var(--ground-tex-b) 0 1.6px, transparent 1.6px 11px),
+      repeating-linear-gradient(90deg, var(--ground-tex-a), var(--ground-tex-a) 18px, var(--ground-tex-b) 18px, var(--ground-tex-b) 36px);
+    opacity:.55;
     box-shadow:inset 0 4px 0 rgba(255,255,255,.1);
     pointer-events:none;
     z-index:0;
+  }
+  #game.terrain-desert::before{ /* wind-blown sand dunes */
+    background:
+      radial-gradient(ellipse at 30% 10%, rgba(255,255,255,.14), transparent 60%),
+      repeating-linear-gradient(96deg, rgba(255,255,255,.08) 0 2px, transparent 2px 46px),
+      repeating-linear-gradient(96deg, rgba(0,0,0,.09) 0 3px, transparent 3px 46px),
+      repeating-linear-gradient(4deg, transparent 0 30px, rgba(0,0,0,.05) 30px 33px),
+      repeating-radial-gradient(circle at 4px 4px, rgba(0,0,0,.06) 0 1px, transparent 1px 7px);
+    opacity:.65;
+  }
+  #game.terrain-castle::before{ /* stone floor tiles with mortar grout */
+    background:
+      radial-gradient(ellipse at 30% 10%, rgba(255,255,255,.06), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.5) 0 2px, transparent 2px 44px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,.5) 0 2px, transparent 2px 64px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.06) 2px 4px, transparent 4px 44px),
+      repeating-linear-gradient(90deg, var(--ground-tex-a), var(--ground-tex-a) 32px, var(--ground-tex-b) 32px, var(--ground-tex-b) 64px);
+    opacity:.7;
   }
   @media (max-width:700px){
     #game{font-size:13px; aspect-ratio:3/5; max-height:100dvh;}
@@ -104,6 +127,24 @@
     z-index:1;
   }
   #stars{display:none;}
+  #reload-btn{
+    position:absolute;
+    top:6px; left:6px;
+    width:28px; height:28px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,.6);
+    background:rgba(0,0,0,.25);
+    color:#fff;
+    font-size:16px;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    z-index:25;
+    transition:background .15s ease, transform .15s ease;
+  }
+  #reload-btn:hover{background:rgba(0,0,0,.45); transform:rotate(60deg);}
   .star{position:absolute;width:2px;height:2px;background:#fff;opacity:.6;animation:twinkle 2.4s infinite ease-in-out;}
   @keyframes twinkle{0%,100%{opacity:.15;}50%{opacity:.8;}}
 
@@ -401,7 +442,7 @@
   }
   .status-row.ko .nm{color:#8888a8;text-decoration:line-through;}
   .bar-wrap{display:flex;align-items:center;justify-content:flex-end;gap:5px;}
-  .bar-track{width:68px;flex:0 0 auto;height:9px;background:#000;border:1px solid #050a3c;box-shadow:0 0 0 1px #5060c0;}
+  .bar-track{width:51px;flex:0 0 auto;height:9px;background:#000;border:1px solid #050a3c;box-shadow:0 0 0 1px #5060c0;}
   .bar-track > div{height:100%;}
   .hp-fill{background:linear-gradient(#7cf07c,var(--hp-green));}
   .hp-fill.mid{background:linear-gradient(#f8e888,var(--hp-yellow));}
@@ -412,6 +453,10 @@
   #target-window{
     flex:0 0 34%;
     display:flex;flex-direction:column;gap:2px;font-size:1.05em;overflow-y:auto;
+  }
+  #target-window .cmd-item{
+    justify-content:flex-start;
+    text-align:left;
   }
 
   .hidden{display:none !important;}
@@ -445,6 +490,7 @@
 <body>
 <div id="game">
   <div id="battlefield">
+    <button id="reload-btn" title="さいしょから">⟳</button>
     <div id="stars"></div>
     <div id="enemy-row"></div>
     <div id="party-row"></div>
@@ -667,7 +713,8 @@ const EVOLUTION = {
 
 const PARTY_TEMPLATE = ()=>[
   makeChar('p0','せんし','fighter',48,4,13,5,9,[],[
-    {name:'両手斬り',mp:4,mult:1.5,type:'tech-atk-single'}
+    {name:'両手斬り',mp:4,mult:1.5,type:'tech-atk-single'},
+    {name:'ちょうはつ',mp:2,type:'tech-taunt'}
   ]),
   makeChar('p1','まほうつかい','mage',26,20,4,2,10,[
     {name:'ファイア',mp:4,power:18,type:'atk-single'},
@@ -678,7 +725,8 @@ const PARTY_TEMPLATE = ()=>[
     {name:'プロテス',mp:5,power:0,type:'buff-def'}
   ]),
   makeChar('p3','モンク','monk',34,0,10,3,14,[],[
-    {name:'正拳突き',mp:0,mult:1.3,type:'tech-atk-single'}
+    {name:'正拳突き',mp:0,mult:1.56,type:'tech-atk-single',hitRate:0.8},
+    {name:'ためる',mp:0,type:'tech-charge'}
   ])
 ];
 
@@ -702,7 +750,7 @@ function applyJobSkills(p){
       p.spells = (p.spells||[]).concat([
         {name:'ケアルガ',mp:12,power:22,type:'heal-all'},
         {name:'プロテガ',mp:12,power:4,type:'buff-def-all'},
-        {name:'ポーリー',mp:10,power:24,type:'atk-single'}
+        {name:'ホーリー',mp:10,power:24,type:'atk-single'}
       ]);
       break;
     case 'supermonk':
@@ -742,7 +790,7 @@ const ENEMY_POOL = [
 ];
 
 function makeBossEncounter(){
-  return [makeBoss('boss1','くらやみのしはいしゃ','darklord',150,15,5,8,[
+  return [makeBoss('boss1','やみのしはいしゃ','darklord',150,15,5,8,[
     {name:'attack-basic', type:'attack-basic', mp:0, weight:3},
     {name:'ダークファイア', type:'atk-single', power:24, mp:0, weight:3},
     {name:'あんこくは', type:'atk-all', power:14, mp:0, weight:2},
@@ -777,7 +825,8 @@ let state = {
   targetSelectMode: false,
   activeTargetConfirm: null,
   endAction: null,
-  tauntTargetId: null
+  tauntTargetId: null,
+  chargedActorId: null
 };
 
 const el = {
@@ -829,6 +878,170 @@ function sfxConfirm(){ playTone(880, 0.06, 'square', 0.15); playTone(1320, 0.08,
 function sfxCancel(){ playTone(420, 0.07, 'square', 0.13); playTone(280, 0.09, 'square', 0.11, 0.05); }
 function sfxDisabled(){ playTone(180, 0.08, 'sawtooth', 0.08); }
 
+/* ---------- 8bit-style BGM (synthesized, original composition) ---------- */
+const music = {
+  playing:false,
+  timerId:null,
+  nextStepTime:0,
+  step:0,
+  stepDur:0, // seconds per 16th note
+  bass:[],
+  melody:[],
+  bassVol:0.09,
+  leadVol:0.075
+};
+
+// オリジナルの8ビット風バトルBGM(4小節ループ、Dマイナー、ギャロップベース+スネア風パーカッション+メロディ)
+const BATTLE_BASS = [
+  146.83,146.83,293.66,146.83, 146.83,146.83,293.66,146.83,
+  146.83,146.83,293.66,146.83, 146.83,146.83,293.66,146.83,
+  130.81,130.81,261.63,130.81, 130.81,130.81,261.63,130.81,
+  130.81,130.81,261.63,130.81, 130.81,130.81,261.63,130.81,
+  116.54,116.54,233.08,116.54, 116.54,116.54,233.08,116.54,
+  116.54,116.54,233.08,116.54, 116.54,116.54,233.08,116.54,
+  110.00,110.00,220.00,110.00, 110.00,110.00,220.00,110.00,
+  110.00,110.00,220.00,110.00, 110.00,110.00,220.00,110.00
+];
+const BATTLE_MELODY = [
+  440.00,349.23,293.66,349.23,
+  392.00,329.63,261.63,329.63,
+  349.23,293.66,233.08,293.66,
+  329.63,261.63,220.00,246.94
+];
+
+function scheduleTone(freq, startTime, duration, type, vol){
+  const ctx = getAudioCtx();
+  if(!ctx || !freq) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(vol, startTime+0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime+duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(startTime);
+  osc.stop(startTime+duration+0.02);
+}
+
+function scheduleSnare(startTime){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const bufferSize = Math.floor(ctx.sampleRate*0.06);
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * (1 - i/bufferSize); }
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass';
+  filter.frequency.setValueAtTime(1800, startTime);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.14, startTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime+0.07);
+  noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+  noise.start(startTime); noise.stop(startTime+0.08);
+}
+
+function musicScheduler(){
+  const ctx = getAudioCtx();
+  if(!ctx || !music.playing) return;
+  while(music.nextStepTime < ctx.currentTime + 0.12){
+    const i = music.step % music.bass.length;
+    scheduleTone(music.bass[i], music.nextStepTime, music.stepDur*0.9, 'square', music.bassVol);
+    if(music.melody.length && i % 4 === 0){
+      const mi = Math.floor(i/4) % music.melody.length;
+      scheduleTone(music.melody[mi], music.nextStepTime, music.stepDur*3.6, 'square', music.leadVol);
+    }
+    if(i % 8 === 4){
+      scheduleSnare(music.nextStepTime);
+    }
+    music.nextStepTime += music.stepDur;
+    music.step++;
+  }
+}
+
+// ボス戦専用BGM(半音進行を含む不穏なマイナー調、速めのテンポ)
+const BOSS_BASS = [
+  82.41,82.41,164.81,82.41, 82.41,82.41,164.81,82.41,
+  87.31,87.31,174.61,87.31, 87.31,87.31,174.61,87.31,
+  82.41,82.41,164.81,82.41, 82.41,82.41,164.81,82.41,
+  77.78,77.78,155.56,77.78, 73.42,73.42,146.83,73.42
+];
+const BOSS_MELODY = [
+  329.63,349.23,329.63,311.13,
+  329.63,349.23,392.00,349.23,
+  311.13,329.63,311.13,293.66,
+  277.18,293.66,311.13,246.94
+];
+
+function startBattleBGM(){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  stopBGM();
+  music.bass = BATTLE_BASS;
+  music.melody = BATTLE_MELODY;
+  music.bassVol = 0.09;
+  music.leadVol = 0.075;
+  music.stepDur = 60/176/4; // 176 BPM, 16th notes
+  music.step = 0;
+  music.nextStepTime = ctx.currentTime + 0.05;
+  music.playing = true;
+  music.timerId = setInterval(musicScheduler, 25);
+}
+
+function startBossBGM(){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  stopBGM();
+  music.bass = BOSS_BASS;
+  music.melody = BOSS_MELODY;
+  music.bassVol = 0.11;
+  music.leadVol = 0.085;
+  music.stepDur = 60/188/4; // 188 BPM, さらに速く緊迫感を強調
+  music.step = 0;
+  music.nextStepTime = ctx.currentTime + 0.05;
+  music.playing = true;
+  music.timerId = setInterval(musicScheduler, 25);
+}
+
+function stopBGM(){
+  music.playing = false;
+  if(music.timerId){ clearInterval(music.timerId); music.timerId = null; }
+}
+
+function playVictoryFanfare(){
+  stopBGM();
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const t = ctx.currentTime + 0.05;
+
+  // 冒頭のドラマチックな一打
+  scheduleSnare(t);
+
+  // 上昇するファンファーレ
+  const flourish = [523.25, 659.25, 783.99, 1046.50];
+  flourish.forEach((f,i)=>{
+    scheduleTone(f, t+i*0.11, 0.13, 'square', 0.17);
+    scheduleTone(f/2, t+i*0.11, 0.13, 'triangle', 0.08);
+  });
+
+  // 力強い和音
+  const chordTime = t + flourish.length*0.11 + 0.05;
+  [523.25, 659.25, 783.99].forEach(f=>{
+    scheduleTone(f, chordTime, 0.5, 'square', 0.14);
+    scheduleTone(f/2, chordTime, 0.5, 'triangle', 0.09);
+  });
+  scheduleSnare(chordTime);
+
+  // 締めくくりの大きな和音
+  const finalTime = chordTime + 0.62;
+  scheduleSnare(finalTime);
+  [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50].forEach(f=>{
+    scheduleTone(f, finalTime, 1.15, 'square', 0.1);
+  });
+}
+
 function sfxSlash(){
   const ctx = getAudioCtx();
   if(!ctx) return;
@@ -857,17 +1070,32 @@ function sfxImpactThud(){
   if(!ctx) return;
   const t = ctx.currentTime;
   const osc = ctx.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(170, t);
-  osc.frequency.exponentialRampToValueAtTime(48, t+0.18);
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(220, t);
+  osc.frequency.exponentialRampToValueAtTime(70, t+0.16);
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.4, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t+0.22);
+  gain.gain.setValueAtTime(0.001, t);
+  gain.gain.linearRampToValueAtTime(0.5, t+0.012);
+  gain.gain.exponentialRampToValueAtTime(0.001, t+0.2);
   osc.connect(gain); gain.connect(ctx.destination);
-  osc.start(t); osc.stop(t+0.24);
+  osc.start(t); osc.stop(t+0.22);
+
+  const bufferSize = Math.max(1, Math.floor(ctx.sampleRate*0.03));
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<bufferSize;i++){
+    data[i] = (Math.random()*2-1) * (1 - i/bufferSize);
+  }
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0.3, t);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, t+0.04);
+  noise.connect(noiseGain); noiseGain.connect(ctx.destination);
+  noise.start(t);
 }
 
-function playAttackSfx(actor){
+function playPhysicalSfx(actor){
   if(!actor) return;
   if(actor.kind==='fighter' || actor.kind==='knight'){
     sfxSlash();
@@ -875,6 +1103,31 @@ function playAttackSfx(actor){
     sfxImpactThud();
   }
 }
+
+function sfxMagic(){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const t = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(600, t);
+  osc.frequency.exponentialRampToValueAtTime(1500, t+0.11);
+  osc.frequency.exponentialRampToValueAtTime(520, t+0.24);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.001, t);
+  gain.gain.linearRampToValueAtTime(0.22, t+0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, t+0.26);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(t); osc.stop(t+0.28);
+}
+function playMagicSfx(){ sfxMagic(); }
+
+function sfxHealMagic(){
+  playTone(760, 0.13, 'sine', 0.14, 0);
+  playTone(1140, 0.15, 'sine', 0.12, 0.09);
+  playTone(1520, 0.18, 'sine', 0.09, 0.18);
+}
+function playHealMagicSfx(){ sfxHealMagic(); }
 
 function setMessage(t){ el.msg.textContent = t; el.messageWindow.classList.remove('hidden'); }
 function hideMessageWindow(){ el.messageWindow.classList.add('hidden'); }
@@ -989,6 +1242,8 @@ function renderStatus(){
   updateTurnIndicator();
   if(state.targetSelectMode){
     el.statusWindow.scrollLeft = el.statusWindow.scrollWidth;
+  } else {
+    el.statusWindow.scrollLeft = 0;
   }
 }
 
@@ -1043,7 +1298,7 @@ const EFFECT_COLORS = {
   'ケアルガ':'#44ff88',
   'プロテス':'#66e0ff',
   'プロテガ':'#66e0ff',
-  'ポーリー':'#ffffff',
+  'ホーリー':'#ffffff',
   'メテオ':'#111111',
   'フレア':'#ff2200',
   '回し蹴り':'#ffffff',
@@ -1127,8 +1382,6 @@ const COMMANDS = [
   {key:'skill', label:'とくぎ'},
   {key:'magic', label:'まほう'},
   {key:'defend', label:'ぼうぎょ'},
-  {key:'charge', label:'ためる'},
-  {key:'taunt', label:'ちょうはつ'},
   {key:'back', label:'もどる'}
 ];
 
@@ -1147,13 +1400,9 @@ function renderCommands(){
   const actor = currentActor();
   if(!actor || !actor.alive){ return; }
   COMMANDS.forEach(cmd=>{
-    const isMonkClass = (actor.kind==='monk' || actor.kind==='supermonk');
-    const isFighterClass = (actor.kind==='fighter' || actor.kind==='knight');
-    const disabled = (cmd.key==='magic' && actor.spells.length===0)
-      || (cmd.key==='skill' && actor.techniques.length===0)
-      || (cmd.key==='back' && state.turnIndex<=0)
-      || (cmd.key==='charge' && !isMonkClass)
-      || (cmd.key==='taunt' && (!isFighterClass || actor.mp<2));
+    if(cmd.key==='magic' && actor.spells.length===0) return;
+    if(cmd.key==='skill' && actor.techniques.length===0) return;
+    const disabled = (cmd.key==='back' && state.turnIndex<=0);
     const div = document.createElement('div');
     div.className = 'cmd-item'+(disabled?' disabled':'');
     div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${cmd.label}</span>`;
@@ -1202,27 +1451,19 @@ function chooseCommand(key){
     goBackOneTurn();
     return;
   }
-  if(key==='charge'){
-    queueAction({actorId:actor.id, isEnemy:false, type:'charge'});
-    advanceTurn();
-    return;
-  }
-  if(key==='taunt'){
-    queueAction({actorId:actor.id, isEnemy:false, type:'taunt'});
-    advanceTurn();
-    return;
-  }
 }
 
 function showSpellSelect(actor){
   el.targetWindow.classList.remove('hidden');
   document.getElementById('target-window').querySelector('.cmd-title').textContent='まほうをえらぶ';
   el.targetList.innerHTML='';
+  state.targetSelectMode = true;
+  renderStatus();
   actor.spells.forEach(sp=>{
     const disabled = actor.mp < sp.mp;
     const div = document.createElement('div');
     div.className='cmd-item'+(disabled?' disabled':'');
-    div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${sp.name}　(MP${sp.mp})</span>`;
+    div.innerHTML = `<span class="cursor">▶</span><span>${sp.name}　(${sp.mp})</span>`;
     if(!disabled){
       div.addEventListener('click', ()=>{
         sfxConfirm();
@@ -1254,8 +1495,8 @@ function showSpellSelect(actor){
   });
   const back = document.createElement('div');
   back.className='cmd-item';
-  back.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>もどる</span>`;
-  back.addEventListener('click', ()=>{ sfxCancel(); el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; });
+  back.innerHTML = `<span class="cursor">▶</span><span>もどる</span>`;
+  back.addEventListener('click', ()=>{ sfxCancel(); el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; state.targetSelectMode=false; renderStatus(); });
   back.addEventListener('mouseenter', ()=>{ sfxCursor(); });
   el.targetList.appendChild(back);
 }
@@ -1264,18 +1505,28 @@ function showSkillSelect(actor){
   el.targetWindow.classList.remove('hidden');
   document.getElementById('target-window').querySelector('.cmd-title').textContent='とくぎをえらぶ';
   el.targetList.innerHTML='';
+  state.targetSelectMode = true;
+  renderStatus();
   actor.techniques.forEach(tech=>{
     const disabled = actor.mp < tech.mp;
     const div = document.createElement('div');
     div.className='cmd-item'+(disabled?' disabled':'');
-    const mpTag = tech.mp>0 ? `　(MP${tech.mp})` : '';
-    div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${tech.name}${mpTag}</span>`;
+    const mpTag = tech.mp>0 ? `　(${tech.mp})` : '';
+    div.innerHTML = `<span class="cursor">▶</span><span>${tech.name}${mpTag}</span>`;
     if(!disabled){
       div.addEventListener('click', ()=>{
         sfxConfirm();
         if(tech.type==='tech-atk-all'){
           el.targetWindow.classList.add('hidden');
           queueAction({actorId:actor.id, isEnemy:false, type:'tech', tech, targetAll:true});
+          advanceTurn();
+        } else if(tech.type==='tech-charge'){
+          el.targetWindow.classList.add('hidden');
+          queueAction({actorId:actor.id, isEnemy:false, type:'charge'});
+          advanceTurn();
+        } else if(tech.type==='tech-taunt'){
+          el.targetWindow.classList.add('hidden');
+          queueAction({actorId:actor.id, isEnemy:false, type:'taunt'});
           advanceTurn();
         } else {
           showTargetSelect('enemy', (targetId)=>{
@@ -1296,8 +1547,8 @@ function showSkillSelect(actor){
   });
   const back = document.createElement('div');
   back.className='cmd-item';
-  back.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>もどる</span>`;
-  back.addEventListener('click', ()=>{ sfxCancel(); el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; });
+  back.innerHTML = `<span class="cursor">▶</span><span>もどる</span>`;
+  back.addEventListener('click', ()=>{ sfxCancel(); el.targetWindow.classList.add('hidden'); document.getElementById('target-window').querySelector('.cmd-title').textContent='たいしょうをえらぶ'; state.targetSelectMode=false; renderStatus(); });
   back.addEventListener('mouseenter', ()=>{ sfxCursor(); });
   el.targetList.appendChild(back);
 }
@@ -1329,7 +1580,7 @@ function showTargetSelect(side, onPick, promptText){
     div.className='cmd-item';
     div.dataset.targetId = u.id;
     const hpInfo = u.isEnemy ? '' : `　HP ${u.hp}/${u.maxHp}`;
-    div.innerHTML = `<span class="cursor">▶</span>&nbsp;<span>${u.name}${hpInfo}</span>`;
+    div.innerHTML = `<span class="cursor">▶</span><span>${u.name}${hpInfo}</span>`;
     div.addEventListener('mouseenter', ()=>{
       sfxCursor();
       highlightTarget(u.id, aliveList);
@@ -1385,8 +1636,6 @@ function advanceTurn(){
     startResolvePhase();
   } else {
     hideMessageWindow();
-    applyTurnStartPassives(currentActor());
-    renderStatus();
     renderCommands();
   }
 }
@@ -1428,6 +1677,16 @@ async function startResolvePhase(){
   el.cmdList.innerHTML = '<div class="cmd-item disabled"><span class="cursor"></span><span>コマンドじっこうちゅう...</span></div>';
   el.targetWindow.classList.add('hidden');
   renderStatus();
+
+  // このラウンドで挑発が使われていれば、敵が対象を選ぶ前に反映させる
+  const tauntAction = state.queuedActions.find(a=>a.type==='taunt' && !a.isEnemy);
+  if(tauntAction){
+    const taunter = state.party.find(p=>p.id===tauntAction.actorId);
+    if(taunter && taunter.alive){
+      state.tauntTargetId = taunter.id;
+      taunter.taunting = true;
+    }
+  }
 
   // enemy actions
   state.enemies.filter(e=>e.alive).forEach(en=>{
@@ -1495,11 +1754,11 @@ function resolveTarget(action, actor, allUnits){
 
 async function executeAction(action, allUnits){
   const actor = allUnits[action.actorId];
-  if(actor && actor.charging && action.type!=='attack' && action.type!=='charge'){
-    actor.charging = false; // 攻撃以外を選ぶとためた力は不発
+  if(actor && state.chargedActorId===actor.id && action.type!=='attack' && action.type!=='charge'){
+    state.chargedActorId = null; // 攻撃以外を選ぶとためた力は不発
   }
   if(action.type==='charge'){
-    actor.charging = true;
+    state.chargedActorId = actor.id;
     setMessage(`${actor.name}は ちからを ためている!`);
     await sleep(1500);
     return;
@@ -1524,9 +1783,11 @@ async function executeAction(action, allUnits){
     setMessage(`${actor.name}の こうげき!`);
     await animateAttack(actor.id, target.id, !actor.isEnemy);
     let dmg = Math.max(1, Math.round(actor.atk*(0.85+Math.random()*0.4) - target.def*(target.defending?1.6:1)));
-    if(actor.charging){
+    let wasCharged = false;
+    if(state.chargedActorId===actor.id){
       dmg = Math.round(dmg*2.5);
-      actor.charging = false;
+      state.chargedActorId = null;
+      wasCharged = true;
     }
     if(target.taunting){
       dmg = Math.max(1, Math.round(dmg/2));
@@ -1540,12 +1801,15 @@ async function executeAction(action, allUnits){
     }
     target.hp = Math.max(0, target.hp - dmg);
     popDamage(target.id, dmg, null);
-    playAttackSfx(actor);
+    playPhysicalSfx(actor);
+    if(wasCharged){
+      spawnImpactBurst(target.id, '#ffcc00', dmg);
+    }
     if(actor.kind==='fighter' || actor.kind==='knight'){
       spawnSlashEffect(target.id, '#f0f0f0', dmg, 'single');
     }
     updateHpBarsOnly();
-    setMessage(`${target.name}に ${dmg}の ダメージ!`);
+    setMessage(wasCharged ? `ためたちからを こめた こうげき! ${target.name}に ${dmg}の ダメージ!` : `${target.name}に ${dmg}の ダメージ!`);
     await sleep(1500);
     if(target.hp<=0){
       target.alive = false;
@@ -1574,7 +1838,7 @@ async function executeAction(action, allUnits){
       if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
       target.hp = Math.max(0, target.hp - dmg);
       spawnImpactBurst(target.id, EFFECT_COLORS[sp.name], dmg);
-      playAttackSfx(actor);
+      playMagicSfx();
       popDamage(target.id, dmg, null);
       updateHpBarsOnly();
       setMessage(`${target.name}に ${dmg}の ダメージ!`);
@@ -1593,12 +1857,14 @@ async function executeAction(action, allUnits){
       const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
       target.hp = Math.min(target.maxHp, target.hp+heal);
       spawnImpactBurst(target.id, EFFECT_COLORS[sp.name], heal);
+      playHealMagicSfx();
       popDamage(target.id, '+'+heal, 'heal');
       renderStatus();
       setMessage(`${target.name}の HPが ${heal} かいふくした!`);
       await sleep(1500);
     } else if(sp.type==='heal-all'){
       const targets = state.party.filter(p=>p.alive);
+      playHealMagicSfx();
       for(const target of targets){
         const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
         target.hp = Math.min(target.maxHp, target.hp+heal);
@@ -1616,7 +1882,7 @@ async function executeAction(action, allUnits){
         if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
         target.hp = Math.max(0, target.hp - dmg);
         spawnImpactBurst(target.id, EFFECT_COLORS[sp.name], dmg);
-        playAttackSfx(actor);
+        playMagicSfx();
         popDamage(target.id, dmg, null);
         updateHpBarsOnly();
         if(target.hp<=0){
@@ -1633,6 +1899,7 @@ async function executeAction(action, allUnits){
       const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
       actor.hp = Math.min(actor.maxHp, actor.hp+heal);
       spawnImpactBurst(actor.id, EFFECT_COLORS[sp.name], heal);
+      playHealMagicSfx();
       popDamage(actor.id, '+'+heal, 'heal');
       updateHpBarsOnly();
       setMessage(`${actor.name}は じぶんを かいふくした! ${heal} かいふく!`);
@@ -1641,12 +1908,14 @@ async function executeAction(action, allUnits){
       const target = allUnits[action.targetId];
       if(!target) return;
       spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
+      playHealMagicSfx();
       target.def += 4;
       popDamage(target.id, 'DEF UP', 'heal');
       setMessage(`${target.name}の ぼうぎょりょくが あがった!`);
       await sleep(1500);
     } else if(sp.type==='buff-def-all'){
       const targets = state.party.filter(p=>p.alive);
+      playHealMagicSfx();
       for(const target of targets){
         target.def += (sp.power||4);
         spawnImpactBurst(target.id, EFFECT_COLORS[sp.name]);
@@ -1672,11 +1941,18 @@ async function executeAction(action, allUnits){
       const target = resolveTarget(action, actor, allUnits);
       if(!target) return;
       await animateAttack(actor.id, target.id, !actor.isEnemy);
+      const missChance = tech.hitRate!=null ? (1-tech.hitRate) : 0;
+      if(Math.random() < missChance){
+        popDamage(target.id, 'MISS', 'miss');
+        setMessage(`${actor.name}の ${tech.name}は はずれた!`);
+        await sleep(1500);
+        return;
+      }
       let dmg = Math.max(1, Math.round(actor.atk*tech.mult*(0.85+Math.random()*0.3) - target.def*(target.defending?1.6:1)));
       if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
       target.hp = Math.max(0, target.hp - dmg);
       spawnImpactBurst(target.id, EFFECT_COLORS[tech.name], dmg);
-      playAttackSfx(actor);
+      playPhysicalSfx(actor);
       if(actor.kind==='fighter' || actor.kind==='knight'){
         spawnSlashEffect(target.id, EFFECT_COLORS[tech.name], dmg, 'cross');
       }
@@ -1698,7 +1974,7 @@ async function executeAction(action, allUnits){
         if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
         target.hp = Math.max(0, target.hp - dmg);
         spawnImpactBurst(target.id, EFFECT_COLORS[tech.name], dmg);
-        playAttackSfx(actor);
+        playPhysicalSfx(actor);
         popDamage(target.id, dmg, null);
         updateHpBarsOnly();
         if(target.hp<=0){
@@ -1749,8 +2025,7 @@ async function applyPassiveOnHit(target, dmg, attacker){
 
 function regenMp(p){
   if(!p || p.maxMp<=0 || p.mp>=p.maxMp) return;
-  const pct = 0.20 + Math.random()*0.10; // 約25%程度(20〜30%のランダム)
-  const amt = Math.round(p.maxMp*pct);
+  const amt = Math.round(p.maxMp*0.20);
   if(amt<=0) return;
   const before = p.mp;
   p.mp = Math.min(p.maxMp, p.mp+amt);
@@ -1790,6 +2065,7 @@ function nextRound(){
   }
   state.party.forEach(p=>{ p.defending=false; p.taunting=false; });
   state.tauntTargetId = null;
+  state.chargedActorId = null;
   state.phase='command';
   if(state.turnIndex >= state.party.length){
     // shouldn't happen (means all dead, handled above)
@@ -1797,7 +2073,7 @@ function nextRound(){
   }
   renderStatus();
   hideMessageWindow();
-  applyTurnStartPassives(currentActor());
+  state.party.forEach(p=>{ if(p.alive) applyTurnStartPassives(p); });
   renderStatus();
   renderCommands();
 }
@@ -1806,6 +2082,11 @@ function endBattle(victory){
   state.battleOver = true;
   state.phase='over';
   el.cmdList.innerHTML='';
+  if(!victory){
+    stopBGM();
+  } else {
+    playVictoryFanfare();
+  }
   setTimeout(()=>{
     el.endOverlay.classList.remove('hidden');
     if(!victory){
@@ -1816,7 +2097,7 @@ function endBattle(victory){
     } else if(state.stage===3){
       classChangeParty();
       el.endTitle.textContent = 'へいわが おとずれた';
-      el.endDesc.textContent = 'ついに くらやみのしはいしゃを たおした!\n\nへいわが おとずれた!';
+      el.endDesc.textContent = 'ついに やみのしはいしゃを たおした!\n\nへいわが おとずれた!';
       el.endBtn.textContent = 'はじめから';
       state.endAction = 'restart';
     } else {
@@ -1852,6 +2133,11 @@ function startBattle(stage){
   state.enemies = (state.stage===3) ? makeBossEncounter() : randomEncounter(state.stage);
   state.turnIndex = 0;
   state.queuedActions = [];
+  if(state.stage===3){
+    startBossBGM();
+  } else {
+    startBattleBGM();
+  }
   state.battleOver = false;
   const gameEl = document.getElementById('game');
   gameEl.classList.toggle('terrain-castle', state.stage===3);
@@ -1859,6 +2145,7 @@ function startBattle(stage){
   state.phase='intro';
   state.party.forEach(p=>{ p.defending=false; p.taunting=false; });
   state.tauntTargetId = null;
+  state.chargedActorId = null;
   while(state.turnIndex < state.party.length && !state.party[state.turnIndex].alive){
     state.turnIndex++;
   }
@@ -1870,7 +2157,7 @@ function startBattle(stage){
     if(state.turnIndex < state.party.length){
       state.phase='command';
       hideMessageWindow();
-      applyTurnStartPassives(currentActor());
+      state.party.forEach(p=>{ if(p.alive) applyTurnStartPassives(p); });
       renderStatus();
       renderCommands();
     }
@@ -1879,6 +2166,19 @@ function startBattle(stage){
 
 spawnStars();
 setupBattlefieldTargetDelegation();
+document.getElementById('reload-btn').addEventListener('click', ()=>{
+  location.reload();
+});
+
+// ブラウザの自動再生制限対策: 画面のどこを触っても最初の1回で音声をアンロックする
+function unlockAudioOnce(){
+  getAudioCtx();
+  document.removeEventListener('pointerdown', unlockAudioOnce);
+  document.removeEventListener('keydown', unlockAudioOnce);
+}
+document.addEventListener('pointerdown', unlockAudioOnce, {once:true});
+document.addEventListener('keydown', unlockAudioOnce, {once:true});
+
 startBattle(1);
 
 })();
