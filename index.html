@@ -77,39 +77,33 @@
     --ground-tex-a:#4a4a52;
     --ground-tex-b:#59595f;
   }
-  #game::before{ /* ground texture: grass tufts (default/grassland) */
+  #game::before{ /* ground texture: 8bit-style random noise tile (grassland) */
     content:"";
     position:absolute;
     left:0;right:0;
     top:11%;bottom:0;
-    background:
-      radial-gradient(ellipse at 25% 15%, rgba(255,255,255,.10), transparent 55%),
-      repeating-linear-gradient(115deg, rgba(0,0,0,.06) 0 3px, transparent 3px 14px),
-      repeating-linear-gradient(65deg, rgba(255,255,255,.05) 0 2px, transparent 2px 12px),
-      repeating-radial-gradient(circle at 6px 6px, var(--ground-tex-b) 0 1.6px, transparent 1.6px 11px),
-      repeating-linear-gradient(90deg, var(--ground-tex-a), var(--ground-tex-a) 18px, var(--ground-tex-b) 18px, var(--ground-tex-b) 36px);
-    opacity:.55;
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABjElEQVR4nFVSvYqrQBg9KyrDjoHBKVKoEAJ2pvEBct/rPl4eIE22CwTBbJFCGXBcPsZmi7N32NvI/BzPd37m7c/fzj1XVeQAlMkAaKM+PyZV5OIDgLgwtQaQiNtMre1hJz5oowBMwwKg7fdkER+qzppa8zZVJmuO5f36IgEAe9itTsbHLD7wHw6kkATA/foC4J7rNCzaqNUJt6bWFHM6N8pkptbKZCkHidtIPw2L+HA6N9qoaVhMrcVt8/wVAenqRNymTGYPu4i+X1/kFh9MrTmTCpPmWNJGvB4fszKZKnK6EreJ29p+X3UWQEoyCqPFaCBG6Z4rYVVnU3vYRelVZ8vy/XYZmUlEqyJnRQBSQpnA58c0Fcvp3IyP+UfMv2RjJAnR4jZtVNVZ8YEpiw+cGblZbhoznYaFYTfHkqqI4xwuVJEnqshpg1/3XAFUnW37PU+oKqacAijL92lYfgopcp7QBh23/Z5bZbJEfOBGGyU+tP3+dhlvl5F6yP1f078fNoDxMf9Wzyr4+FjuN6r0F/U7+ARLAAAAAElFTkSuQmCC);
+    background-size:48px 48px;
+    background-repeat:repeat;
+    image-rendering:pixelated;
+    opacity:.8;
     box-shadow:inset 0 4px 0 rgba(255,255,255,.1);
     pointer-events:none;
     z-index:0;
   }
-  #game.terrain-desert::before{ /* wind-blown sand dunes */
-    background:
-      radial-gradient(ellipse at 30% 10%, rgba(255,255,255,.14), transparent 60%),
-      repeating-linear-gradient(96deg, rgba(255,255,255,.08) 0 2px, transparent 2px 46px),
-      repeating-linear-gradient(96deg, rgba(0,0,0,.09) 0 3px, transparent 3px 46px),
-      repeating-linear-gradient(4deg, transparent 0 30px, rgba(0,0,0,.05) 30px 33px),
-      repeating-radial-gradient(circle at 4px 4px, rgba(0,0,0,.06) 0 1px, transparent 1px 7px);
-    opacity:.65;
+  #game.terrain-desert::before{ /* 8bit-style random noise tile (sand) */
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABqElEQVR4nD1SvYrqQBT+EtIlGIlFhJDCjJ0oATshhY1PYOEz7CMs+zBbLbe4cPsLS4qBwBaC6Npl4kIYMMVKDLG/xXd3pjjMnDnnfD8z1ttLJqYRAJFm/bcG0NSVKvVqnfVdC2A8mV0v5+P+tFpnTV1Zn3+expPZ39+/AABYLOeP+831AwDcMHqDIYAil87jflMHCYAjH/dbGCfcqFIDerXOAPRd6w2Gi+XcVqVWpSYrbzAM44SzCcjqpq44fjyZWV/vz94oIvsil6Rk9LA6jJMil2x22M1IWarUgAQQxok3ipq66rtWTCNvFF0vZ1ukWZFLkWaq1N4ows9y/aCpq+vlbHRTqvX2km22u+vlTA1GLrkRh0kOcsQ0UgdJ3ePJrO/aME7M1OP+ZABphvXxumOK/hS55GvwmkmDoEptm+oil01dLZZzWszVd22RS9pNFrYqtUj//wLKMFGkGYDNdsfOxXLu+oH19f7MVzTmkjENIDHzsgCcvmuP+5OYRq4fUCXvTDM9MLCO8YvnzXanDpJ7jmcnQVw/sI2+Ipd91/LbEpZ1ppr9/wBB2R7ufS66CQAAAABJRU5ErkJggg==);
+    background-size:48px 48px;
+    background-repeat:repeat;
+    image-rendering:pixelated;
+    opacity:.85;
   }
-  #game.terrain-castle::before{ /* stone floor tiles with mortar grout */
-    background:
-      radial-gradient(ellipse at 30% 10%, rgba(255,255,255,.06), transparent 60%),
-      repeating-linear-gradient(0deg, rgba(0,0,0,.5) 0 2px, transparent 2px 44px),
-      repeating-linear-gradient(90deg, rgba(0,0,0,.5) 0 2px, transparent 2px 64px),
-      repeating-linear-gradient(0deg, rgba(255,255,255,.06) 2px 4px, transparent 4px 44px),
-      repeating-linear-gradient(90deg, var(--ground-tex-a), var(--ground-tex-a) 32px, var(--ground-tex-b) 32px, var(--ground-tex-b) 64px);
-    opacity:.7;
+  #game.terrain-castle::before{ /* 8bit-style random noise tile (stone) */
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABmklEQVR4nF1Su2rrQBAdi1TbZORGZlGxjsAEQYjWqEplQ/IHKfMlqe/fuFGfgP0BIQ4EzCVw4xRisRpp3Eyd4iSLuVsN8zhnzpkd3d8/qKoxhohCaEUGInKuqKr529sr8nhZNtluX0Zlec2cEpG1uaqK9NbmGD4NZrPLzeZZZEiYU2tz72vwgOEU1do8hBaIzhVnzGNV3e8/UQbkYnGLga47qOopVRLBjDHb7Qsgm2aVZZMQWtCqatOsvK9DaEc3NwtsP51edN0BupfLu/X6qSyvoh9EhPhHNBZlHp8SogMC4kucK6Is9FXV/NfiPuZFBsAlVTWPsqbTC1U9HoWImMfoEBm8r50rjDHM46RpVsaY3e6diPb7T5H+/JxFemOMMcbanDmFh9A5enz8s9k8gyGeE65jn3h7IhLpf1yKJmTZpOsOcRjYMb/bvZ/99wtiHLu/vv4BjoiY00RkiHf1vkYcQrteP+ECZXm1XN6J9Ngzca5omhUAuu5wPApMY06zbIJrgIqIZrPLJH7mWBPpMQMxwPa+JqKPj7/f3ZAMjq6otq8AAAAASUVORK5CYII=);
+    background-size:40px 40px;
+    background-repeat:repeat;
+    image-rendering:pixelated;
+    opacity:.85;
   }
   @media (max-width:700px){
     #game{font-size:13px; aspect-ratio:3/5; max-height:100dvh;}
@@ -127,24 +121,126 @@
     z-index:1;
   }
   #stars{display:none;}
-  #reload-btn{
+  #clouds{
     position:absolute;
-    top:6px; left:6px;
+    left:0; right:0;
+    top:0; height:11%;
+    overflow:hidden;
+    pointer-events:none;
+    z-index:1;
+  }
+  .cloud{
+    position:absolute;
+    image-rendering:pixelated;
+    background-repeat:no-repeat;
+    background-size:100% 100%;
+    opacity:.92;
+  }
+  .cloud-a{
+    width:64px; height:29px;
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAASCAYAAAApH5ymAAAAd0lEQVR4nGNgGAXDHDBSy6BpWy79J0dflo8e1dyAE0zbcuk/uYCQx1iIsZx6XiEd4HXgtC2X/md669LLLVgBwRCkB0COJZLSJCVpi1ppEiMEBzrNoQMUBw6GNIcOmAbaAYTAqAMpBaMOpBRgFIoDXczQpfFATQAAZRPOEwNGrQcAAAAASUVORK5CYII=);
+  }
+  .cloud-b{
+    width:44px; height:24px;
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAOCAYAAAAxDQxDAAAAWElEQVR4nGNgGG6AkRxN07Zc+k9ITZaPHorZLOQYlOmtS9g1Wy79R7YMw6JpWy79J8ogEgET1U3EAeA+IibcKbaIVsGFDOgWdKMWkQ3gGYraqQ69ZKAbAAANCRqWt26yTwAAAABJRU5ErkJggg==);
+  }
+  .c1{ top:8%;  left:-15%; animation:driftCloud 42s linear infinite; }
+  .c2{ top:45%; left:-15%; animation:driftCloud 58s linear infinite; animation-delay:-18s; }
+  .c3{ top:20%; left:-15%; animation:driftCloudFlip 50s linear infinite; animation-delay:-30s; }
+  .c4{ top:62%; left:-15%; animation:driftCloud 65s linear infinite; animation-delay:-8s; }
+  @keyframes driftCloud{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(115vw); }
+  }
+  @keyframes driftCloudFlip{
+    from{ transform:translateX(0) scaleX(-1); }
+    to{ transform:translateX(115vw) scaleX(-1); }
+  }
+
+  #aura{
+    position:absolute;
+    left:0; right:0;
+    top:0; height:15.1%;
+    overflow:hidden;
+    pointer-events:none;
+    z-index:1;
+    display:none;
+  }
+  #game.terrain-castle #aura{
+    display:block;
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAYCAYAAACIhL/AAAAArklEQVR4nNXWvQ2AIBiE4VcSN7C2tmYc53AM5nAC56C2dg0bG0wMfqgd55X8JE8uEGhCt2DFDz5Y43GNk7khZdu38Wn+TN/285d17suimjGBKu2BAVTCQQZUw8EFqIiDBFTFAThlHBRusQrODz7cgEo4yBpUw8GfXhLF9iABVXEATek3c6YmDl7OYG1cXONUBCrgoNCgCg4MoBIOMqAaDi5ARRz85SVRbQ/AKeMADrmkp+8Y2lcEAAAAAElFTkSuQmCC);
+    background-repeat:repeat;
+    background-size:40px 100%;
+    image-rendering:pixelated;
+    animation:auraScroll 1.1s linear infinite;
+    mix-blend-mode:screen;
+  }
+  #game.terrain-castle #aura::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:radial-gradient(ellipse at 50% 40%, rgba(200,60,255,.35), transparent 70%);
+    animation:auraPulse 1.8s ease-in-out infinite;
+  }
+  #game.terrain-castle #clouds{ display:none; }
+
+  #horizon-scenery{
+    position:absolute;
+    left:0; right:0;
+    top:9%; height:10%;
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAAAeCAYAAADTsBuJAAAB7ElEQVR4nO1ZsW3DMBD8sAhSGoGgQhMEWcCBR3GVwrXLwCMEgatM4AEyRJBKE2QK7aBUNCSG5D/Jf1JMdKVIHu///knCvoEC2B/OfdM0AADw/vr8VELDUqBKC6gFx9Oll+DNbsD+cJ4FIhVYLVg7gABdNBLFghrAualZ/RJ71Ia1AxBwH5nmeq8BnK3nqn6XsP8CpwG1XZYS+riPTFtBZzmCsOrXWJLJ3B3rKmirAbVdlpKvFA748vnLAGnnMXBVVgpydqyaktR2VNTQqVhOFYCc4NDq16DokXpVcXYshet6BIUKLlllUp3KWTBUrqRXUKr7MdzSd0puzAzQPxEvFa7kf36/bX3rOI40DDF3KYClA0JNSGm/EG6pjuJGiM6Pr5etMj8A8JjACQlDqfy+7tL58vFg3em8A2wmmBtOcTxd+m7XjliyQgICmAeFBUPhNE3odu0YymnDMAxxC6cCMDGp49icWH4JTg5u35z7x83Y7dpRTT9QSZeEUrop+1LmkJ+hGBmXIM61qZpzmKukN6Ci1g6MgY4VwNEBZhKmC2LGqXM4waE5ljuEv4q/JF3B5DZVAlcD7ja31glmkBquJJjjMRypiZTQHLI2RJuzA5ZSTakBl0C05ofOvpBrHJsTyy/BycHNsX7Fir+NH9XPZPd8pabjAAAAAElFTkSuQmCC);
+    background-repeat:repeat-x;
+    background-position:bottom left;
+    background-size:auto 100%;
+    image-rendering:pixelated;
+    z-index:1;
+    pointer-events:none;
+    opacity:.9;
+  }
+  #game.terrain-desert #horizon-scenery{
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAAAeCAYAAADTsBuJAAABDUlEQVR4nO3UvQ3CMBCG4TNiBIQomIGamgEQQzAARcagYACGQAxATc0MFAgxBAWyZEX5wfHZn5N8T4ks47sXIUJERGNlqj68H/e30IvXxXkTescQtO3S/HNIw5iC+OzTpFh+2dBihOwQEsDV5xgau4MHsPoSQntf5nLYPkREFsv5R/PiEF1i2Dl87U7XVduZmD9SU/fwXII0xei69CZukBT/DrUBrFxCiPxixFh6lVRztwZwIWO8nu8Z6rtjzj31OWyXkCoEcumumHN7BbDcxcR4VC6LL4sxd6cALo1H5brwJlpzBwcoX6h5X1+EzD3RfAj5YwAwBgBjADAGAGMAMAYAYwAwBgBjACKi8foCcilwEE6Lq8AAAAAASUVORK5CYII=);
+  }
+  #game.terrain-castle #horizon-scenery{
+    display:none;
+  }
+  @keyframes auraScroll{
+    from{ background-position:0 0; }
+    to{ background-position:-40px 0; }
+  }
+  @keyframes auraPulse{
+    0%,100%{ opacity:.5; }
+    50%{ opacity:1; }
+  }
+
+  #reload-btn, #mute-btn{
+    position:absolute;
+    left:6px;
     width:28px; height:28px;
     border-radius:50%;
     border:2px solid rgba(255,255,255,.6);
-    background:rgba(0,0,0,.25);
-    color:#fff;
-    font-size:16px;
-    line-height:1;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    background-color:rgba(0,0,0,.25);
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size:16px 16px;
+    image-rendering:pixelated;
     cursor:pointer;
     z-index:25;
-    transition:background .15s ease, transform .15s ease;
+    transition:background-color .15s ease, transform .15s ease;
   }
-  #reload-btn:hover{background:rgba(0,0,0,.45); transform:rotate(60deg);}
+  #reload-btn{
+    top:6px;
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAkElEQVR4nN2UTRKAIAiFsWmv27r/2XQLJ6iVDaHgT02Lvh2jPnkIAvwG77fDijOuVwQxQgg7yJgomRo3sR5kposmhhi7LpYU6UoxbrOGaVna1ApvUbWcM+suOGMdPcDhDorLR+1q+y/LRMm1HkCDl0et4SyqIGJUx8vq06k+lOvNbpgdu0eir/82M02vin/KCdSz1LXaPTIWAAAAAElFTkSuQmCC);
+  }
+  #reload-btn:hover{background-color:rgba(0,0,0,.45); transform:rotate(60deg);}
+  #mute-btn{
+    top:40px;
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAaklEQVR4nGNgGBaAn1/yPz+/5H+qGQYDxBjKRBVbiQXIriPWlfRzITbXEeNK+rgQn+sIuZL2LiTGdUSnS1IMw2UoE7JhHz48o9iHjOguxKYIZpGAgBSG3MePzxkxBPEBUvMy0YZSzbDhBwAz9dAkHIl4FQAAAABJRU5ErkJggg==);
+  }
+  #mute-btn:hover{background-color:rgba(0,0,0,.45);}
+  #mute-btn.muted{
+    background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAjElEQVR4nK2TQQ7AIAgEt/0AXu3/39Ze9QX0ZEIbsGDZm1GGSUAgKUSVmZlTYW4gUWWiqj6WMOuNu0C7212KRqPWTgBAKQd6v7aQnTSZWS8Zhs0su7epVrdkGDLz2KUbhuKx+7JcglnQXcLGOvzJY1Kjm9wz7Swznbb2A8KffwaTd2mwcFJhAJAKA3ADLsNHRxGNPzsAAAAASUVORK5CYII=);
+    border-color:rgba(255,120,120,.7);
+  }
   .star{position:absolute;width:2px;height:2px;background:#fff;opacity:.6;animation:twinkle 2.4s infinite ease-in-out;}
   @keyframes twinkle{0%,100%{opacity:.15;}50%{opacity:.8;}}
 
@@ -294,9 +390,14 @@
   .unit.targetable:hover .target-hover-arrow{opacity:1;}
   @keyframes fadeOutUnit{to{opacity:0;transform:translateY(10px) scale(.85) rotate(8deg);}}
 
+  .lunge-wrap{display:flex;flex-direction:column;align-items:center;}
   .unit.idle .sprite{}
-  .unit.attack-right .sprite{animation:lungeRight .5s ease;}
-  .unit.attack-left .sprite{animation:lungeLeft .5s ease;}
+  .unit.attack-right .lunge-wrap{animation:lungeRight .5s ease;}
+  .unit.attack-left .lunge-wrap{animation:lungeLeft .5s ease;}
+  .unit.attack-right-hold .lunge-wrap{transform:translateX(60px);transition:transform .22s ease;}
+  .unit.attack-left-hold .lunge-wrap{transform:translateX(-60px);transition:transform .22s ease;}
+  .unit.attack-right-hold .sprite{transform:scale(1.05);transition:transform .22s ease;}
+  .unit.attack-left-hold .sprite{transform:scale(1.05);transition:transform .22s ease;}
   .unit.hit .sprite{animation:flashHit .45s ease;}
   .unit.shake{animation:shakeSmall .4s ease;}
   .unit.casting .sprite{animation:castGlow .6s ease 2;}
@@ -430,10 +531,10 @@
   }
   .status-row{
     display:grid;
-    grid-template-columns:132px 1fr 1fr;
+    grid-template-columns:100px 1fr 1fr;
     align-items:center;
-    gap:4px;
-    padding:1.5px 4px;
+    gap:3px;
+    padding:1.5px 3px;
     border-radius:2px;
   }
   .status-row .nm{
@@ -442,20 +543,32 @@
   }
   .status-row.ko .nm{color:#8888a8;text-decoration:line-through;}
   .bar-wrap{display:flex;align-items:center;justify-content:flex-end;gap:5px;}
-  .bar-track{width:51px;flex:0 0 auto;height:9px;background:#000;border:1px solid #050a3c;box-shadow:0 0 0 1px #5060c0;}
+  .bar-track{width:38px;flex:0 0 auto;height:9px;background:#000;border:1px solid #050a3c;box-shadow:0 0 0 1px #5060c0;}
   .bar-track > div{height:100%;}
   .hp-fill{background:linear-gradient(#7cf07c,var(--hp-green));}
   .hp-fill.mid{background:linear-gradient(#f8e888,var(--hp-yellow));}
   .hp-fill.low{background:linear-gradient(#f89898,var(--hp-red));}
   .mp-fill{background:linear-gradient(#a8d0ff,var(--mp-blue));}
-  .num{font-family:'Press Start 2P',monospace;font-size:.9em;color:#dfe4ff;text-align:left;white-space:pre;}
+  .num{font-family:'Press Start 2P',monospace;font-size:.68em;color:#dfe4ff;text-align:left;white-space:pre;}
 
   #target-window{
     flex:0 0 34%;
     display:flex;flex-direction:column;gap:2px;font-size:1.05em;overflow-y:auto;
   }
   #target-window .cmd-item{
-    justify-content:flex-start;
+    display:block;
+    position:relative;
+    padding-left:20px;
+    text-align:left;
+  }
+  #target-window .cmd-item .cursor{
+    position:absolute;
+    left:0;
+    top:50%;
+    transform:translateY(-50%);
+  }
+  #target-window .cmd-item > span:last-child{
+    display:block;
     text-align:left;
   }
 
@@ -485,13 +598,95 @@
   }
   #end-overlay button:hover{background:#1a2ac8;}
   #end-overlay p{max-width:70%;line-height:1.6;color:#dfe4ff;font-size:.9em;white-space:pre-line;}
+
+  #party-select-overlay{
+    position:absolute;inset:0;
+    background:rgba(0,0,0,.9);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;color:var(--paper);text-align:center;z-index:60;
+    padding:4% 3%;
+  }
+  #party-select-overlay h2{
+    font-family:'Press Start 2P',monospace;
+    font-size:1.2em;color:var(--gold);
+    text-shadow:2px 2px 0 #000;
+    letter-spacing:.05em;
+  }
+  .party-select-note{
+    font-size:.8em;color:#cfd6ff;max-width:85%;line-height:1.5;margin:0 0 4px;
+  }
+  #party-slots{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    width:92%;
+    max-width:420px;
+  }
+  .party-slot{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:linear-gradient(#0b1470,#050a3c);
+    border:2px solid var(--paper);
+    border-radius:4px;
+    padding:6px 8px;
+  }
+  .party-slot .slot-label{
+    font-size:.75em;color:#b8c0ff;width:20%;text-align:left;
+  }
+  .party-slot .slot-preview{
+    display:flex;align-items:center;gap:8px;flex:1;justify-content:center;
+  }
+  .party-slot .slot-sprite{
+    width:2.4em;height:2.4em;
+    background-image:var(--party-sheet-url);
+    background-size:400% 400%;
+    image-rendering:auto;
+    flex:0 0 auto;
+  }
+  .party-slot .slot-name{
+    font-size:.85em;min-width:6.5em;text-align:left;
+  }
+  .party-slot button{
+    font-family:'Noto Sans JP',sans-serif;
+    font-size:1.1em;
+    background:var(--window-blue);
+    color:#fff;
+    border:2px solid var(--paper);
+    width:1.8em;height:1.8em;
+    line-height:1;
+    cursor:pointer;
+    border-radius:3px;
+  }
+  .party-slot button:hover{background:#1a2ac8;}
+  #party-confirm-btn{
+    font-family:'Noto Sans JP',sans-serif;
+    font-size:1em;
+    background:var(--window-blue);
+    color:#fff;
+    border:2px solid var(--paper);
+    padding:10px 26px;
+    cursor:pointer;
+    border-radius:2px;
+    margin-top:8px;
+  }
+  #party-confirm-btn:hover{background:#1a2ac8;}
 </style>
 </head>
 <body>
 <div id="game">
   <div id="battlefield">
-    <button id="reload-btn" title="さいしょから">⟳</button>
+    <button id="reload-btn" title="さいしょから"></button>
+    <button id="mute-btn" title="おんりょう ON/OFF"></button>
     <div id="stars"></div>
+    <div id="clouds">
+      <div class="cloud cloud-a c1"></div>
+      <div class="cloud cloud-b c2"></div>
+      <div class="cloud cloud-a c3"></div>
+      <div class="cloud cloud-b c4"></div>
+    </div>
+    <div id="aura"></div>
+    <div id="horizon-scenery"></div>
     <div id="enemy-row"></div>
     <div id="party-row"></div>
     <div id="message-window" class="window hidden">
@@ -502,6 +697,12 @@
       <h2 id="end-title"></h2>
       <p id="end-desc"></p>
       <button id="end-btn">つぎのたたかいへ</button>
+    </div>
+    <div id="party-select-overlay" class="hidden">
+      <h2>パーティーへんせい</h2>
+      <p class="party-select-note">4にんの なかまを えらんでください<br>(おなじ ジョブを えらんでもOK)</p>
+      <div id="party-slots"></div>
+      <button id="party-confirm-btn">たたかいへ</button>
     </div>
   </div>
 
@@ -530,7 +731,7 @@ const PALETTES = {
   mage:   {'1':'#f2c199','2':'#3a4fc2','3':'#1c2668','4':'#f8d870','5':'#20306e'},
   priest: {'1':'#f2c199','2':'#e8e8f0','3':'#c9a8ff','4':'#f8d870','5':'#8a6fc0'},
   thief:  {'1':'#f2c199','2':'#3a8f3f','3':'#1c4a1e','4':'#c9e8c0','5':'#1f5c22'},
-  goblin: {'1':'#7bc95e','2':'#3f6b2a','3':'#c94b4b','4':'#1e2e14'},
+  goblin: {'1':'#c99a5c','2':'#7a4f2a','3':'#c94b4b','4':'#241408'},
   slime:  {'1':'#4fd0e8','2':'#1a7a94','3':'#e8fbff'},
   bat:    {'1':'#5a4a78','2':'#2c2140','3':'#e85858'},
   ogre:   {'1':'#b06a3a','2':'#5c3418','3':'#e0d0b0','4':'#2a1a0c'},
@@ -593,6 +794,7 @@ const SPRITES = {
     ".1331.",
     "..44..",
     ".2222.",
+    ".2..2.",
     "2.22.2"
   ],
   slime:[
@@ -711,24 +913,51 @@ const EVOLUTION = {
   monk:{kind:'supermonk', name:'Sモンク'}
 };
 
-const PARTY_TEMPLATE = ()=>[
-  makeChar('p0','せんし','fighter',48,4,13,5,9,[],[
-    {name:'両手斬り',mp:4,mult:1.5,type:'tech-atk-single'},
-    {name:'ちょうはつ',mp:2,type:'tech-taunt'}
-  ]),
-  makeChar('p1','まほうつかい','mage',26,20,4,2,10,[
-    {name:'ファイア',mp:4,power:18,type:'atk-single'},
-    {name:'ブリザド',mp:4,power:18,type:'atk-single'}
-  ]),
-  makeChar('p2','そうりょ','priest',30,18,3,3,8,[
-    {name:'ケアル',mp:3,power:22,type:'heal-single'},
-    {name:'プロテス',mp:5,power:0,type:'buff-def'}
-  ]),
-  makeChar('p3','モンク','monk',34,0,10,3,14,[],[
-    {name:'正拳突き',mp:0,mult:1.56,type:'tech-atk-single',hitRate:0.8},
-    {name:'ためる',mp:0,type:'tech-charge'}
-  ])
-];
+const JOB_DEFS = {
+  fighter:{
+    name:'せんし', hp:48, mp:4, atk:13, def:5, spd:9,
+    spells:[],
+    techniques:[
+      {name:'ちょうはつ',mp:2,type:'tech-taunt'},
+      {name:'両手斬り',mp:4,mult:1.5,type:'tech-atk-single'}
+    ]
+  },
+  mage:{
+    name:'まほうつかい', hp:26, mp:20, atk:4, def:2, spd:10,
+    spells:[
+      {name:'ファイア',mp:4,power:18,type:'atk-single'},
+      {name:'ブリザド',mp:4,power:18,type:'atk-single'}
+    ],
+    techniques:[]
+  },
+  priest:{
+    name:'そうりょ', hp:30, mp:18, atk:3, def:3, spd:8,
+    spells:[
+      {name:'ケアル',mp:3,power:22,type:'heal-single'},
+      {name:'プロテス',mp:5,power:0,type:'buff-def'}
+    ],
+    techniques:[]
+  },
+  monk:{
+    name:'モンク', hp:34, mp:0, atk:10, def:3, spd:14,
+    spells:[],
+    techniques:[
+      {name:'ためる',mp:0,type:'tech-charge'},
+      {name:'正拳突き',mp:0,mult:1.56,type:'tech-atk-single',hitRate:0.8}
+    ]
+  }
+};
+const JOB_ORDER = ['fighter','mage','priest','monk'];
+const DEFAULT_PARTY_SELECTION = ['fighter','mage','priest','monk'];
+
+function buildPartyMember(idx, job){
+  const def = JOB_DEFS[job];
+  return makeChar('p'+idx, def.name, job, def.hp, def.mp, def.atk, def.def, def.spd,
+    def.spells.map(s=>({...s})), def.techniques.map(t=>({...t})));
+}
+function buildPartyFromSelection(selection){
+  return selection.map((job,i)=>buildPartyMember(i, job));
+}
 
 function applyJobSkills(p){
   switch(p.kind){
@@ -813,7 +1042,8 @@ function randomEncounter(round){
 
 /* ================= state ================= */
 let state = {
-  party: PARTY_TEMPLATE(),
+  party: buildPartyFromSelection(DEFAULT_PARTY_SELECTION),
+  partySelection: DEFAULT_PARTY_SELECTION.slice(),
   enemies: [],
   round: 1,           // 現在の戦闘内でのターン数(戦闘ごとにリセット)
   stage: 1,           // 何戦目か(1:草原 2:砂漠 3:城/ボス)
@@ -826,7 +1056,7 @@ let state = {
   activeTargetConfirm: null,
   endAction: null,
   tauntTargetId: null,
-  chargedActorId: null
+  chargeStacks: {}
 };
 
 const el = {
@@ -843,21 +1073,34 @@ const el = {
   endTitle: document.getElementById('end-title'),
   endDesc: document.getElementById('end-desc'),
   endBtn: document.getElementById('end-btn'),
+  partySelectOverlay: document.getElementById('party-select-overlay'),
+  partySlots: document.getElementById('party-slots'),
+  partyConfirmBtn: document.getElementById('party-confirm-btn'),
 };
 
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 /* ---------- sound effects (synthesized, no audio files needed) ---------- */
 let audioCtx = null;
+let audioMuted = false;
 function getAudioCtx(){
   if(!audioCtx){
     try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
     catch(e){ return null; }
   }
-  if(audioCtx.state==='suspended'){ audioCtx.resume(); }
+  if(audioCtx.state==='suspended'){
+    audioCtx.resume().then(()=>{
+      if(typeof pendingBGMStart!=='undefined' && pendingBGMStart){
+        const fn = pendingBGMStart;
+        pendingBGMStart = null;
+        fn();
+      }
+    }).catch(()=>{});
+  }
   return audioCtx;
 }
 function playTone(freq, duration, type, volume, delay){
+  if(audioMuted) return;
   const ctx = getAudioCtx();
   if(!ctx) return;
   const startAt = ctx.currentTime + (delay||0);
@@ -910,6 +1153,7 @@ const BATTLE_MELODY = [
 ];
 
 function scheduleTone(freq, startTime, duration, type, vol){
+  if(audioMuted) return;
   const ctx = getAudioCtx();
   if(!ctx || !freq) return;
   const osc = ctx.createOscillator();
@@ -925,6 +1169,7 @@ function scheduleTone(freq, startTime, duration, type, vol){
 }
 
 function scheduleSnare(startTime){
+  if(audioMuted) return;
   const ctx = getAudioCtx();
   if(!ctx) return;
   const bufferSize = Math.floor(ctx.sampleRate*0.06);
@@ -1008,6 +1253,17 @@ function startBossBGM(){
 function stopBGM(){
   music.playing = false;
   if(music.timerId){ clearInterval(music.timerId); music.timerId = null; }
+}
+
+let pendingBGMStart = null;
+function requestBGM(fn){
+  const ctx = getAudioCtx();
+  if(ctx && ctx.state==='running'){
+    pendingBGMStart = null;
+    fn();
+  } else {
+    pendingBGMStart = fn;
+  }
 }
 
 function playVictoryFanfare(){
@@ -1158,12 +1414,15 @@ function renderUnits(){
     hoverArrow.className = 'target-hover-arrow';
     hoverArrow.textContent = '▼';
     u.appendChild(hoverArrow);
-    const spriteScale = en.kind==='darklord' ? 9 : (en.kind==='ogre' ? 6 : (en.kind==='slime'?6:5));
+    const spriteScale = en.kind==='darklord' ? 9 : (en.kind==='ogre' ? 6 : (en.kind==='goblin' ? 7 : (en.kind==='slime'?6:5)));
     const sprite = buildSpriteEl(en.kind, spriteScale);
-    u.appendChild(sprite);
+    const lungeWrap = document.createElement('div');
+    lungeWrap.className = 'lunge-wrap';
+    lungeWrap.appendChild(sprite);
     const shadow = document.createElement('div');
     shadow.className='shadow';
-    u.appendChild(shadow);
+    lungeWrap.appendChild(shadow);
+    u.appendChild(lungeWrap);
     const tag = document.createElement('div');
     tag.className='enemy-name-tag';
     tag.textContent = en.name;
@@ -1194,10 +1453,13 @@ function renderUnits(){
     hoverArrow.textContent = '▼';
     u.appendChild(hoverArrow);
     const sprite = buildSpriteEl(p.kind, 5);
-    u.appendChild(sprite);
+    const lungeWrap = document.createElement('div');
+    lungeWrap.className = 'lunge-wrap';
+    lungeWrap.appendChild(sprite);
     const shadow = document.createElement('div');
     shadow.className='shadow';
-    u.appendChild(shadow);
+    lungeWrap.appendChild(shadow);
+    u.appendChild(lungeWrap);
     el.partyRow.appendChild(u);
   });
 }
@@ -1290,6 +1552,29 @@ async function animateAttack(attackerId, targetId, isPartyAttacker){
   await sleep(260);
   if(a){ a.classList.remove('attack-left','attack-right'); a.classList.add('idle'); }
   if(t){ t.classList.remove('hit','shake'); }
+}
+
+async function lungeForwardHold(attackerId, isPartyAttacker){
+  const a = document.getElementById('unit-'+attackerId);
+  if(a){
+    a.classList.remove('idle');
+    a.classList.add(isPartyAttacker?'attack-left-hold':'attack-right-hold');
+  }
+  await sleep(230);
+}
+async function lungeBackFromHold(attackerId){
+  const a = document.getElementById('unit-'+attackerId);
+  if(a){
+    a.classList.remove('attack-left-hold','attack-right-hold');
+    a.classList.add('idle');
+  }
+  await sleep(220);
+}
+function hitFlashTarget(targetId){
+  const t = document.getElementById('unit-'+targetId);
+  if(!t) return;
+  t.classList.add('hit','shake');
+  setTimeout(()=>{ t.classList.remove('hit','shake'); }, 260);
 }
 const EFFECT_COLORS = {
   'ファイア':'#ff4433',
@@ -1436,7 +1721,7 @@ function chooseCommand(key){
     showTargetSelect('enemy', (targetId)=>{
       queueAction({actorId:actor.id, isEnemy:false, type:'attack', targetId});
       advanceTurn();
-    }, 'こうげきするてきをえらんでください');
+    }, 'たいしょうをえらぶ');
     return;
   }
   if(key==='magic'){
@@ -1467,6 +1752,8 @@ function showSpellSelect(actor){
     if(!disabled){
       div.addEventListener('click', ()=>{
         sfxConfirm();
+        [...el.targetList.children].forEach(c=>c.classList.remove('active'));
+        div.classList.add('active');
         if(sp.type==='atk-all' || sp.type==='heal-all' || sp.type==='buff-def-all'){
           el.targetWindow.classList.add('hidden');
           queueAction({actorId:actor.id, isEnemy:false, type:'spell', spell:sp});
@@ -1475,12 +1762,12 @@ function showSpellSelect(actor){
           showTargetSelect('party', (targetId)=>{
             queueAction({actorId:actor.id, isEnemy:false, type:'spell', spell:sp, targetId});
             advanceTurn();
-          }, 'たいしょうをえらんでください');
+          }, 'たいしょうをえらぶ');
         } else {
           showTargetSelect('enemy', (targetId)=>{
             queueAction({actorId:actor.id, isEnemy:false, type:'spell', spell:sp, targetId});
             advanceTurn();
-          }, 'こうげきするてきをえらんでください');
+          }, 'たいしょうをえらぶ');
         }
       });
       div.addEventListener('mouseenter', ()=>{
@@ -1493,6 +1780,7 @@ function showSpellSelect(actor){
     }
     el.targetList.appendChild(div);
   });
+  if(el.targetList.children.length){ el.targetList.children[0].classList.add('active'); }
   const back = document.createElement('div');
   back.className='cmd-item';
   back.innerHTML = `<span class="cursor">▶</span><span>もどる</span>`;
@@ -1516,6 +1804,8 @@ function showSkillSelect(actor){
     if(!disabled){
       div.addEventListener('click', ()=>{
         sfxConfirm();
+        [...el.targetList.children].forEach(c=>c.classList.remove('active'));
+        div.classList.add('active');
         if(tech.type==='tech-atk-all'){
           el.targetWindow.classList.add('hidden');
           queueAction({actorId:actor.id, isEnemy:false, type:'tech', tech, targetAll:true});
@@ -1532,7 +1822,7 @@ function showSkillSelect(actor){
           showTargetSelect('enemy', (targetId)=>{
             queueAction({actorId:actor.id, isEnemy:false, type:'tech', tech, targetId});
             advanceTurn();
-          }, 'こうげきするてきをえらんでください');
+          }, 'たいしょうをえらぶ');
         }
       });
       div.addEventListener('mouseenter', ()=>{
@@ -1545,6 +1835,7 @@ function showSkillSelect(actor){
     }
     el.targetList.appendChild(div);
   });
+  if(el.targetList.children.length){ el.targetList.children[0].classList.add('active'); }
   const back = document.createElement('div');
   back.className='cmd-item';
   back.innerHTML = `<span class="cursor">▶</span><span>もどる</span>`;
@@ -1565,6 +1856,7 @@ function showTargetSelect(side, onPick, promptText){
 
   function confirmPick(id){
     sfxConfirm();
+    highlightTarget(id, aliveList);
     clearTargetHighlights();
     el.targetWindow.classList.add('hidden');
     state.targetSelectMode = false;
@@ -1754,12 +2046,17 @@ function resolveTarget(action, actor, allUnits){
 
 async function executeAction(action, allUnits){
   const actor = allUnits[action.actorId];
-  if(actor && state.chargedActorId===actor.id && action.type!=='attack' && action.type!=='charge'){
-    state.chargedActorId = null; // 攻撃以外を選ぶとためた力は不発
+  const isDamagingTech = action.type==='tech' && action.tech &&
+    (action.tech.type==='tech-atk-single' || action.tech.type==='tech-atk-all');
+  if(actor && state.chargeStacks[actor.id] && action.type!=='attack' && action.type!=='charge' && !isDamagingTech){
+    delete state.chargeStacks[actor.id]; // 攻撃・ダメージを与えるとくぎ以外を選ぶとためた力は不発
   }
   if(action.type==='charge'){
-    state.chargedActorId = actor.id;
-    setMessage(`${actor.name}は ちからを ためている!`);
+    state.chargeStacks[actor.id] = (state.chargeStacks[actor.id]||0) + 1;
+    const stackCount = state.chargeStacks[actor.id];
+    popDamage(actor.id, 'ATK UP', 'heal');
+    updateHpBarsOnly();
+    setMessage(`${actor.name}は ちからを ためている!(${stackCount}回)`);
     await sleep(1500);
     return;
   }
@@ -1784,9 +2081,11 @@ async function executeAction(action, allUnits){
     await animateAttack(actor.id, target.id, !actor.isEnemy);
     let dmg = Math.max(1, Math.round(actor.atk*(0.85+Math.random()*0.4) - target.def*(target.defending?1.6:1)));
     let wasCharged = false;
-    if(state.chargedActorId===actor.id){
-      dmg = Math.round(dmg*2.5);
-      state.chargedActorId = null;
+    let chargeStackUsed = 0;
+    if(state.chargeStacks[actor.id]){
+      chargeStackUsed = state.chargeStacks[actor.id];
+      dmg = Math.round(dmg*(1 + 1.5*chargeStackUsed));
+      delete state.chargeStacks[actor.id];
       wasCharged = true;
     }
     if(target.taunting){
@@ -1809,7 +2108,7 @@ async function executeAction(action, allUnits){
       spawnSlashEffect(target.id, '#f0f0f0', dmg, 'single');
     }
     updateHpBarsOnly();
-    setMessage(wasCharged ? `ためたちからを こめた こうげき! ${target.name}に ${dmg}の ダメージ!` : `${target.name}に ${dmg}の ダメージ!`);
+    setMessage(wasCharged ? `ためたちからを こめた こうげき!(×${chargeStackUsed}) ${target.name}に ${dmg}の ダメージ!` : `${target.name}に ${dmg}の ダメージ!`);
     await sleep(1500);
     if(target.hp<=0){
       target.alive = false;
@@ -1873,27 +2172,35 @@ async function executeAction(action, allUnits){
         await sleep(150);
       }
       renderStatus();
-      setMessage(`${actor.name}の ${sp.name}で なかまぜんいんが かいふくした!`);
+      setMessage(`${actor.name}の ${sp.name}で なかまぜんいんが かいふく!`);
       await sleep(1500);
     } else if(sp.type==='atk-all'){
       const targets = actor.isEnemy ? state.party.filter(p=>p.alive) : state.enemies.filter(e=>e.alive);
+      await lungeForwardHold(actor.id, !actor.isEnemy);
+      screenFlash();
+      const hits = [];
       for(const target of targets){
         let dmg = Math.max(1, Math.round(sp.power*(0.85+Math.random()*0.3)));
         if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
         target.hp = Math.max(0, target.hp - dmg);
         spawnImpactBurst(target.id, EFFECT_COLORS[sp.name], dmg);
         playMagicSfx();
+        hitFlashTarget(target.id);
         popDamage(target.id, dmg, null);
         updateHpBarsOnly();
+        hits.push({target, dmg});
+      }
+      await sleep(300);
+      await lungeBackFromHold(actor.id);
+      for(const {target, dmg} of hits){
         if(target.hp<=0){
           target.alive=false;
           await animateDeath(target.id);
         } else {
           await applyPassiveOnHit(target, dmg, actor);
         }
-        await sleep(250);
       }
-      setMessage(`${actor.name}の ${sp.name}が ぜんたいを おそった!`);
+      setMessage(`${actor.name}の ${sp.name}が ぜんたいを こうげき!`);
       await sleep(1500);
     } else if(sp.type==='heal-self'){
       const heal = Math.round(sp.power*(0.9+Math.random()*0.2));
@@ -1902,7 +2209,7 @@ async function executeAction(action, allUnits){
       playHealMagicSfx();
       popDamage(actor.id, '+'+heal, 'heal');
       updateHpBarsOnly();
-      setMessage(`${actor.name}は じぶんを かいふくした! ${heal} かいふく!`);
+      setMessage(`${actor.name}は じぶんを ${heal} かいふく!`);
       await sleep(1500);
     } else if(sp.type==='buff-def'){
       const target = allUnits[action.targetId];
@@ -1911,7 +2218,7 @@ async function executeAction(action, allUnits){
       playHealMagicSfx();
       target.def += 4;
       popDamage(target.id, 'DEF UP', 'heal');
-      setMessage(`${target.name}の ぼうぎょりょくが あがった!`);
+      setMessage(`${target.name}の ぼうぎょがあがった!`);
       await sleep(1500);
     } else if(sp.type==='buff-def-all'){
       const targets = state.party.filter(p=>p.alive);
@@ -1922,7 +2229,7 @@ async function executeAction(action, allUnits){
         popDamage(target.id, 'DEF UP', 'heal');
         await sleep(150);
       }
-      setMessage(`${actor.name}の ${sp.name}で なかまぜんいんの ぼうぎょりょくが あがった!`);
+      setMessage(`${actor.name}の ${sp.name}で なかまぜんいんのぼうぎょがあがった!`);
       await sleep(1500);
     }
     updateHpBarsOnly();
@@ -1949,16 +2256,27 @@ async function executeAction(action, allUnits){
         return;
       }
       let dmg = Math.max(1, Math.round(actor.atk*tech.mult*(0.85+Math.random()*0.3) - target.def*(target.defending?1.6:1)));
+      let wasCharged = false;
+      let chargeStackUsed = 0;
+      if(state.chargeStacks[actor.id]){
+        chargeStackUsed = state.chargeStacks[actor.id];
+        dmg = Math.round(dmg*(1 + 1.5*chargeStackUsed));
+        delete state.chargeStacks[actor.id];
+        wasCharged = true;
+      }
       if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
       target.hp = Math.max(0, target.hp - dmg);
       spawnImpactBurst(target.id, EFFECT_COLORS[tech.name], dmg);
+      if(wasCharged){
+        spawnImpactBurst(target.id, '#ffcc00', dmg);
+      }
       playPhysicalSfx(actor);
       if(actor.kind==='fighter' || actor.kind==='knight'){
         spawnSlashEffect(target.id, EFFECT_COLORS[tech.name], dmg, 'cross');
       }
       popDamage(target.id, dmg, null);
       updateHpBarsOnly();
-      setMessage(`${target.name}に ${dmg}の ダメージ!`);
+      setMessage(wasCharged ? `ためたちからを こめた ${tech.name}!(×${chargeStackUsed}) ${target.name}に ${dmg}の ダメージ!` : `${target.name}に ${dmg}の ダメージ!`);
       await sleep(1500);
       if(target.hp<=0){
         target.alive=false;
@@ -1968,22 +2286,34 @@ async function executeAction(action, allUnits){
       }
     } else if(tech.type==='tech-atk-all'){
       const targets = state.enemies.filter(e=>e.alive);
+      await lungeForwardHold(actor.id, !actor.isEnemy);
+      screenFlash();
+      const chargeStackUsed = state.chargeStacks[actor.id] || 0;
+      const wasCharged = chargeStackUsed > 0;
+      if(wasCharged){ delete state.chargeStacks[actor.id]; }
+      const hits = [];
       for(const target of targets){
-        await animateAttack(actor.id, target.id, !actor.isEnemy);
         let dmg = Math.max(1, Math.round(actor.atk*tech.mult*(0.85+Math.random()*0.3) - target.def*(target.defending?1.6:1)));
+        if(wasCharged){ dmg = Math.round(dmg*(1 + 1.5*chargeStackUsed)); }
         if(target.taunting){ dmg = Math.max(1, Math.round(dmg/2)); }
         target.hp = Math.max(0, target.hp - dmg);
         spawnImpactBurst(target.id, EFFECT_COLORS[tech.name], dmg);
+        if(wasCharged){ spawnImpactBurst(target.id, '#ffcc00', dmg); }
         playPhysicalSfx(actor);
+        hitFlashTarget(target.id);
         popDamage(target.id, dmg, null);
         updateHpBarsOnly();
+        hits.push({target, dmg});
+      }
+      await sleep(300);
+      await lungeBackFromHold(actor.id);
+      for(const {target} of hits){
         if(target.hp<=0){
           target.alive=false;
           await animateDeath(target.id);
         }
-        await sleep(250);
       }
-      setMessage(`${actor.name}の ${tech.name}が てき ぜんたいを おそった!`);
+      setMessage(wasCharged ? `ためたちからを こめた ${actor.name}の ${tech.name}が てき ぜんたいを こうげき!(×${chargeStackUsed})` : `${actor.name}の ${tech.name}が てき ぜんたいを こうげき!`);
       await sleep(1500);
     }
     updateHpBarsOnly();
@@ -1999,7 +2329,7 @@ async function applyPassiveOnHit(target, dmg, attacker){
     target.hp = Math.min(target.maxHp, target.hp+heal);
     popDamage(target.id, '+'+heal, 'heal');
     updateHpBarsOnly();
-    setMessage(`${target.name}は ダメージから ${heal} かいふくした!`);
+    setMessage(`${target.name}は ${heal} 自然かいふくした!`);
     await sleep(1500);
   } else if(target.kind==='supermonk' || target.kind==='monk'){
     if(attacker && attacker.alive && attacker.isEnemy){
@@ -2065,7 +2395,6 @@ function nextRound(){
   }
   state.party.forEach(p=>{ p.defending=false; p.taunting=false; });
   state.tauntTargetId = null;
-  state.chargedActorId = null;
   state.phase='command';
   if(state.turnIndex >= state.party.length){
     // shouldn't happen (means all dead, handled above)
@@ -2105,7 +2434,7 @@ function endBattle(victory){
       el.endTitle.textContent = 'しょうり!';
       let desc = 'てきを ぜんめつさせた!';
       if(changed.length){
-        desc += '\n\nクラスチェンジした!\n' + changed.map(c=>`・${c.from}→${c.to}`).join('\n');
+        desc += '\n\nクラスチェンジした!';
       }
       el.endDesc.textContent = desc;
       el.endBtn.textContent = 'つぎのたたかいへ';
@@ -2118,9 +2447,8 @@ el.endBtn.addEventListener('click', ()=>{
   sfxConfirm();
   el.endOverlay.classList.add('hidden');
   if(state.endAction==='restart'){
-    state.party = PARTY_TEMPLATE();
     state.stage = 1;
-    startBattle(1);
+    showPartySelect();
   } else {
     startBattle(state.stage+1);
   }
@@ -2134,9 +2462,9 @@ function startBattle(stage){
   state.turnIndex = 0;
   state.queuedActions = [];
   if(state.stage===3){
-    startBossBGM();
+    requestBGM(startBossBGM);
   } else {
-    startBattleBGM();
+    requestBGM(startBattleBGM);
   }
   state.battleOver = false;
   const gameEl = document.getElementById('game');
@@ -2145,7 +2473,7 @@ function startBattle(stage){
   state.phase='intro';
   state.party.forEach(p=>{ p.defending=false; p.taunting=false; });
   state.tauntTargetId = null;
-  state.chargedActorId = null;
+  state.chargeStacks = {};
   while(state.turnIndex < state.party.length && !state.party[state.turnIndex].alive){
     state.turnIndex++;
   }
@@ -2164,10 +2492,82 @@ function startBattle(stage){
   }, 3000);
 }
 
+/* ================= party selection ================= */
+function renderPartySlots(){
+  el.partySlots.innerHTML = '';
+  state.partySelection.forEach((job, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'party-slot';
+
+    const label = document.createElement('div');
+    label.className = 'slot-label';
+    label.textContent = `キャラ${idx+1}`;
+    row.appendChild(label);
+
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '◀';
+    prevBtn.addEventListener('click', ()=>{
+      sfxCursor();
+      const i = JOB_ORDER.indexOf(state.partySelection[idx]);
+      state.partySelection[idx] = JOB_ORDER[(i-1+JOB_ORDER.length)%JOB_ORDER.length];
+      renderPartySlots();
+    });
+
+    const preview = document.createElement('div');
+    preview.className = 'slot-preview';
+    const spriteDiv = document.createElement('div');
+    spriteDiv.className = 'slot-sprite';
+    const pos = PARTY_SHEET_MAP[job];
+    if(pos){
+      const posX = PARTY_SHEET_COLS>1 ? (pos.col/(PARTY_SHEET_COLS-1))*100 : 0;
+      const posY = PARTY_SHEET_ROWS>1 ? (pos.row/(PARTY_SHEET_ROWS-1))*100 : 0;
+      spriteDiv.style.backgroundPosition = posX+'% '+posY+'%';
+    }
+    const nameSpan = document.createElement('div');
+    nameSpan.className = 'slot-name';
+    nameSpan.textContent = JOB_DEFS[job].name;
+    preview.appendChild(spriteDiv);
+    preview.appendChild(nameSpan);
+
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = '▶';
+    nextBtn.addEventListener('click', ()=>{
+      sfxCursor();
+      const i = JOB_ORDER.indexOf(state.partySelection[idx]);
+      state.partySelection[idx] = JOB_ORDER[(i+1)%JOB_ORDER.length];
+      renderPartySlots();
+    });
+
+    row.appendChild(prevBtn);
+    row.appendChild(preview);
+    row.appendChild(nextBtn);
+    el.partySlots.appendChild(row);
+  });
+}
+
+function showPartySelect(){
+  if(!state.partySelection || state.partySelection.length!==4){
+    state.partySelection = DEFAULT_PARTY_SELECTION.slice();
+  }
+  renderPartySlots();
+  el.partySelectOverlay.classList.remove('hidden');
+}
+
+el.partyConfirmBtn.addEventListener('click', ()=>{
+  sfxConfirm();
+  state.party = buildPartyFromSelection(state.partySelection);
+  el.partySelectOverlay.classList.add('hidden');
+  startBattle(1);
+});
+
 spawnStars();
 setupBattlefieldTargetDelegation();
 document.getElementById('reload-btn').addEventListener('click', ()=>{
   location.reload();
+});
+document.getElementById('mute-btn').addEventListener('click', ()=>{
+  audioMuted = !audioMuted;
+  document.getElementById('mute-btn').classList.toggle('muted', audioMuted);
 });
 
 // ブラウザの自動再生制限対策: 画面のどこを触っても最初の1回で音声をアンロックする
@@ -2179,7 +2579,7 @@ function unlockAudioOnce(){
 document.addEventListener('pointerdown', unlockAudioOnce, {once:true});
 document.addEventListener('keydown', unlockAudioOnce, {once:true});
 
-startBattle(1);
+showPartySelect();
 
 })();
 </script>
